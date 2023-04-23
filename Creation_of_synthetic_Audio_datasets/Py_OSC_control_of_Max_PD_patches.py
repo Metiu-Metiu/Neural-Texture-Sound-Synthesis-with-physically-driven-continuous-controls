@@ -23,7 +23,7 @@ synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minD
 # The following lists must have the same length as synthContrParam_names,
 # and 1 list of length 2 for each synthesis control parameter
 # SYNTHESIS CONTROL PARAMETERS RANDOM VALUES MIN/MAX RANGES [MIN, MAX], ONE LIST PER PARAMETER
-synthContrParam_minMax = [[10,75], [10, 20], [25,40], [30, 60], [20, 30], [50, 65], [40, 55]]
+synthContrParam_minMax = [[5,75], [10, 20], [25,40], [30, 60], [20, 30], [50, 65], [40, 55]]
 # WEIGHTS FOR CHANCES OF GENERATING NEW VALUES AT EACH FILE [TRUE, FALSE], ONE LIST PER PARAMETER
 synthContrParam_chanceNewVal = [[80,20], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75]]
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
