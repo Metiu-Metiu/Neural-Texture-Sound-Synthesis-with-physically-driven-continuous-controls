@@ -7,12 +7,13 @@ import time
 import csv
 import os
 import threading
+import json
 
 ########### INPUT VARIABLES ############## Only change these variables !!
 random.seed(0) # for reproducibility
 pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
 audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-numberOfFilesToBeGenerated = 10 # dataset size
+numberOfFilesToBeGenerated = 500 # dataset size
 sampleRate = int(44100) # problems with values < 44100
 fileDurationSecs = float(3) # secs
 quantization = int(16) # bits (not used)
@@ -30,6 +31,67 @@ oscComm_IPNumber = '127.0.01'
 oscComm_PyToMaxPD_PortNumber = 8000
 oscComm_MaxPDToPy_PortNumber = 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
 ############################################
+
+datasetDescription_Dict = {
+    'Dataset_General_Settings' : {
+        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset',
+        'audio_FIles_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
+        'number_Of_Audio_files' : 10, # audio dataset size
+        'random_Seed' : 0 # for reproducibility
+        },
+
+    'Audio_File_Parameters' : {
+        'sample_Rate' : 44100, # problems with values < 44100
+        'file_Duration_Secs' : 3, 
+        'quantization_Bits' : 16, # (not used)
+        'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to numberOfFilesToBeGenerated)
+        },
+
+    'Synthesis_Control_Parameters' : {
+        'avgRate' : {
+            'minValue' : 10,
+            'maxValue' : 75,
+            'chance_Generating_New_Value' : 80,
+            'chance_Retaining_Previous_File_Value' : 20
+            },
+        'minRadius' : {
+            'minValue' : 10,
+            'maxValue' : 20,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            },
+        'maxRadius' : {
+            'minValue' : 25,
+            'maxValue' : 40,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            },
+        'expRadius' : {
+            'minValue' : 30,
+            'maxValue' : 60,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            },
+        'minDepth' : {
+            'minValue' : 20,
+            'maxValue' : 30,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            },
+        'maxDepth' : {
+            'minValue' : 50,
+            'maxValue' : 65,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            },
+        'expDepth' : {
+            'minValue' : 40,
+            'maxValue' : 55,
+            'chance_Generating_New_Value' : 25,
+            'chance_Retaining_Previous_File_Value' : 75
+            }
+        }
+}
 
 ############################################
 class OscMessageReceiver(threading.Thread):
@@ -179,4 +241,10 @@ with open(csvFilePath, 'w') as csvfile:
 print(f'Finished writing {csvFileName} .csv file with synthesis control parameters at path:')
 print(f'    {csvFilePath}')
 
-# close OSC sender
+# create .json file
+jsonFileName = fileNamePrefix + str(".json")
+jsonFilePath = os.path.join(pathToStoreFilesInto, jsonFileName)
+with open(jsonFilePath, 'w') as jsonfile:
+    json.dump(datasetDescription_Dict, jsonfile, indent=4)
+print(f'Finished writing {jsonFileName} .json file with synthesis control parameters at path:')
+print(f'    {jsonFilePath}')
