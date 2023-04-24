@@ -13,7 +13,7 @@ import json
 random.seed(0) # for reproducibility
 pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
 audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-numberOfFilesToBeGenerated = 10 # dataset size
+numberOfFilesToBeGenerated = 100 # dataset size
 sampleRate = int(44100) # problems with values < 44100
 fileDurationSecs = float(3) # secs
 quantization = int(16) # bits (not used)
@@ -94,9 +94,9 @@ datasetDescription_Dict = {
 }
 
 ############################################
-class OscMessageReceiver(threading.Thread):
+class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
     def __init__(self, ip, receive_from_port):
-        super(OscMessageReceiver, self).__init__()
+        # super(OscMessageReceiver, self).__init__()
         self.ip = ip
         self.receiving_from_port = receive_from_port
 
@@ -108,9 +108,9 @@ class OscMessageReceiver(threading.Thread):
         self.server = BlockingOSCUDPServer((self.ip, self.receiving_from_port), self.dispatcher)
 
         self.oscMessageReceived_Flag = False
-        self.isOSCMessageReceiverNeeded = True
         self.count = 0
 
+    '''
     def run(self):
         print("OscMessageReceiver Started ---")
         while 1:
@@ -119,6 +119,7 @@ class OscMessageReceiver(threading.Thread):
                 break
             time.sleep(0.1)
         print('OscMessageReceiver Stopped ---')
+    '''
 
     def default_handler(self, address, *args):
         if address == '/audioFileRecording_Ended':
@@ -164,7 +165,7 @@ print(f'Started OSC sender server with Host: {ip}, and port: {sending_to_max_pd_
 # Create OSC receiver
 receiving_from_max_pd_port = oscComm_MaxPDToPy_PortNumber
 oscReceiver = OscMessageReceiver(ip, receiving_from_max_pd_port)
-oscReceiver.start()
+# oscReceiver.start()
 print(f'Started OSC receiver server with Host: {ip}, and port: {receiving_from_max_pd_port}')
 #########################################################################
 
@@ -222,6 +223,7 @@ for fileNumber in range(numberOfFilesToBeGenerated):
     # back from Max/PD to indicate that the recording has finished
     oscSender.send_message('startRecordAudioToBuffer', True)
     while(oscReceiver.oscMessageReceived_Flag == False): # wait until the server receives the OSC message
+        oscReceiver.server.handle_request()
         time.sleep(0.1)
     # message received (flag set to True by OscMessageReceiver), reset flag
     oscReceiver.oscMessageReceived_Flag = False
@@ -229,8 +231,6 @@ for fileNumber in range(numberOfFilesToBeGenerated):
 ################################################################################################ finished generating audio files
 
 # print(synthContrParam_Dictlist)
-oscReceiver.isOSCMessageReceiverNeeded = False
-oscReceiver.join(1.0)
 if oscReceiver.count == numberOfFilesToBeGenerated:
     print('Finished creating synthetic dataset, no errors encountered')
 else:
