@@ -6,7 +6,7 @@ import random
 import time
 import csv
 import os
-import threading
+# import threading
 import json
 
 ########### INPUT VARIABLES ############## Only change these variables !!
