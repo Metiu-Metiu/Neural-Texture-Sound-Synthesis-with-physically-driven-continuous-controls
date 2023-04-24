@@ -13,7 +13,7 @@ import json
 random.seed(0) # for reproducibility
 pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
 audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-numberOfFilesToBeGenerated = 500 # dataset size
+numberOfFilesToBeGenerated = 10 # dataset size
 sampleRate = int(44100) # problems with values < 44100
 fileDurationSecs = float(3) # secs
 quantization = int(16) # bits (not used)
@@ -109,20 +109,21 @@ class OscMessageReceiver(threading.Thread):
 
         self.oscMessageReceived_Flag = False
         self.isOSCMessageReceiverNeeded = True
+        self.count = 0
 
     def run(self):
         print("OscMessageReceiver Started ---")
-        count = 0
         while 1:
             self.server.handle_request()
-            count += 1
             if self.isOSCMessageReceiverNeeded == False:
                 break
             time.sleep(0.1)
         print('OscMessageReceiver Stopped ---')
 
     def default_handler(self, address, *args):
-        self.oscMessageReceived_Flag = True
+        if address == '/audioFileRecording_Ended':
+            self.oscMessageReceived_Flag = True
+            self.count += 1
         # print(f'OSC message received: {address} {args}')
 
     def get_ip(self):
@@ -182,6 +183,7 @@ oscSender.send_message('bufferLength_ms', int(fileDurationSecs * 1000))
 # synthesis control parameters used to generate the corresopnding audio file
 synthContrParam_Dictlist = list()
 
+############################################################################################################
 # generate audio files and save synthesis control parameters
 for fileNumber in range(numberOfFilesToBeGenerated):
     oscSender.send_message('clearBuffer', True)
@@ -224,11 +226,15 @@ for fileNumber in range(numberOfFilesToBeGenerated):
     # message received (flag set to True by OscMessageReceiver), reset flag
     oscReceiver.oscMessageReceived_Flag = False
     print(f'Finished recording file: {audioFileName}')
-    
+################################################################################################ finished generating audio files
+
 # print(synthContrParam_Dictlist)
 oscReceiver.isOSCMessageReceiverNeeded = False
 oscReceiver.join(1.0)
-print('Finished creating synthetic dataset')
+if oscReceiver.count == numberOfFilesToBeGenerated:
+    print('Finished creating synthetic dataset, no errors encountered')
+else:
+    print('Finished creating synthetic dataset, some errors were encountered')
 
 # generate .csv file with audio file names and synthesis control parameters
 csvFileName = fileNamePrefix + str(".csv")
@@ -238,13 +244,11 @@ with open(csvFilePath, 'w') as csvfile:
     writer.writeheader()
     for dict in synthContrParam_Dictlist:
         writer.writerow(dict)
-print(f'Finished writing {csvFileName} .csv file with synthesis control parameters at path:')
-print(f'    {csvFilePath}')
+print(f'Finished writing {csvFileName} .csv file with synthesis control parameters')
 
 # create .json file
 jsonFileName = fileNamePrefix + str(".json")
 jsonFilePath = os.path.join(pathToStoreFilesInto, jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
     json.dump(datasetDescription_Dict, jsonfile, indent=4)
-print(f'Finished writing {jsonFileName} .json file with synthesis control parameters at path:')
-print(f'    {jsonFilePath}')
+print(f'Finished writing {jsonFileName} .json file with synthesis control parameters')
