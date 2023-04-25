@@ -9,11 +9,15 @@ import os
 # import threading
 import json
 
-########### INPUT VARIABLES ############## Only change these variables !!
+################################# INPUT VARIABLES #################################### Only make changes here !!
+######## Dataset_General_Settings ########
 random.seed(10) # for reproducibility
 pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
 audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
 numberOfFilesToBeGenerated = 10 # dataset size
+includeInCSVFile_ParametersValues_ScaledForMaxPDRanges = False
+
+######## Audio_Files_Settings ########
 sampleRate = int(44100) # problems with values < 44100
 fileDurationSecs = float(3) # secs
 quantization = int(16) # bits (not used)
@@ -21,6 +25,8 @@ fileNamePrefix = 'SDT_FluidFlow' # increasing numbers will be appended (1, 2, ..
 audioFilesVolume_NormRandRanges = [0.9, 0.45] # [min, max] values for generating random volume scaling at each synthesised audio file
 audioFilesVolume_chanceNewVal = [100, 0] # [TRUE, FALSE] chances of generating new volume values at each file
 audioFilesVolume_MaxPDMapRanges = [0., 158.] # [min, max] values expected in the Max/PD patch for volume control (inspect the object in the patch !!
+
+######## Synthesis_Control_Parameters_Settings ########
 synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
 # SYNTHESIS CONTROL PARAMETERS NAMES
 synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minDepth', 'maxDepth', 'expDepth']
@@ -33,20 +39,23 @@ synthContrParam_ranges = [[0., 100.],  [0., 100.], [0., 100.], [0., 100.], [0., 
 synthContrParam_minMax = [[0.05, 0.75], [0.1, 0.2], [0.25, 0.4], [0.3, 0.6], [0.2, 0.3], [0.5, 0.6], [0.4, 0.55]]
 # WEIGHTS FOR CHANCES OF GENERATING NEW VALUES AT EACH FILE [TRUE, FALSE], ONE LIST PER PARAMETER
 synthContrParam_chanceNewVal = [[80,20], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75]]
+
+######## OSC_Communication_Settings ########
 oscComm_IPNumber = '127.0.01'
 oscComm_PyToMaxPD_PortNumber = 8000
 oscComm_MaxPDToPy_PortNumber = 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
-############################################
+###################################################################################################
 
 datasetDescription_Dict = {
     'Dataset_General_Settings' : {
         'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset',
         'audio_FIles_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_Audio_files' : 10, # audio dataset size
-        'random_Seed' : 0 # for reproducibility
+        'random_Seed' : 0, # for reproducibility
+        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : True
         },
 
-    'Audio_File_Settings' : {
+    'Audio_Files_Settings' : {
         'sample_Rate' : 44100, # problems with values < 44100
         'file_Duration_Secs' : 3, 
         'quantization_Bits' : 16, # (not used)
@@ -56,7 +65,7 @@ datasetDescription_Dict = {
         'volume_MaxPDMapRanges' : [0., 158.] # [min, max] values expected in the Max/PD patch for volume control
         },
 
-    'Synthesis_Control_Parameters' : {
+    'Synthesis_Control_Parameters_Settings' : {
         'synthContrParam_decPrecPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
         'avgRate' : {
             'minValue' : 10,
@@ -100,6 +109,12 @@ datasetDescription_Dict = {
             'chance_Generating_New_Value' : 25,
             'chance_Retaining_Previous_File_Value' : 75
             }
+        },
+
+    'OSC_Communication_Settings'    : { 
+        'oscComm_IPNumber' : '127.0.0.1',
+        'oscComm_PyToMaxPD_PortNumber' : 8000,
+        'oscComm_MaxPDToPy_PortNumber' : 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
         }
 }
 
@@ -155,6 +170,10 @@ class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
 decimalPrecPoints = str('{:.') + str(synthContrParam_decPrecPoints) + str('f}')
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += synthContrParam_names # add synthesis control parameters names to the .csv file header
+csvFileFieldNameSuffix_ScaledParamValues = str('_Scaled')
+if includeInCSVFile_ParametersValues_ScaledForMaxPDRanges:
+    for scpName in synthContrParam_names:
+        csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
 newVolumeNorm = float(decimalPrecPoints.format(random.uniform(audioFilesVolume_NormRandRanges[0], audioFilesVolume_NormRandRanges[1])))
 newVolume_MaxPDMap = round(newVolumeNorm * (audioFilesVolume_MaxPDMapRanges[1] - audioFilesVolume_MaxPDMapRanges[0]) + audioFilesVolume_MaxPDMapRanges[0], synthContrParam_decPrecPoints)
@@ -235,8 +254,10 @@ for fileNumber in range(numberOfFilesToBeGenerated):
         else: # chose not to generate  new value  
             newValNorm = synthContrParam_lastValuesNorm[scp]
             newVal_MaxPDMap = synthContrParam_lastValues[scp]
-        thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
+        thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
+        if includeInCSVFile_ParametersValues_ScaledForMaxPDRanges:
+            thisAudioFile_Dict.update({synthContrParam_names[scp] + csvFileFieldNameSuffix_ScaledParamValues : newVal_MaxPDMap})
         print(f'    Norm {synthContrParam_names[scp]} : {newValNorm}')
         print(f'    Max/PD map {synthContrParam_names[scp]} : {newVal_MaxPDMap}')
 
