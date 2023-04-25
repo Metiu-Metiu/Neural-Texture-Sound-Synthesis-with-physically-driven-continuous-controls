@@ -9,58 +9,23 @@ import os
 # import threading
 import json
 
-################################# INPUT VARIABLES #################################### Only make changes here !!
-######## Dataset_General_Settings ########
-random.seed(10) # for reproducibility
-pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
-audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-numberOfFilesToBeGenerated = 10 # dataset size
-includeInCSVFile_ParametersValues_ScaledForMaxPDRanges = False
-
-######## Audio_Files_Settings ########
-sampleRate = int(44100) # problems with values < 44100
-fileDurationSecs = float(3) # secs
-quantization = int(16) # bits (not used)
-fileNamePrefix = 'SDT_FluidFlow' # increasing numbers will be appended (1, 2, ..., up to numberOfFilesToBeGenerated)
-audioFilesVolume_NormRandRanges = [0.9, 0.45] # [min, max] values for generating random volume scaling at each synthesised audio file
-audioFilesVolume_chanceNewVal = [100, 0] # [TRUE, FALSE] chances of generating new volume values at each file
-audioFilesVolume_MaxPDMapRanges = [0., 158.] # [min, max] values expected in the Max/PD patch for volume control (inspect the object in the patch !!
-
-######## Synthesis_Control_Parameters_Settings ########
-synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
-# SYNTHESIS CONTROL PARAMETERS NAMES
-synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minDepth', 'maxDepth', 'expDepth']
-# All parameters in this script are normalized between 0. and 1., but Max/PD may expect different ranges.
-# This list describe those Max/PD ranges, one list per parameter [min, max]
-synthContrParam_ranges = [[0., 100.],  [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.]]
-# The following lists must have the same length as synthContrParam_names,
-# and 1 list of length 2 for each synthesis control parameter
-# SYNTHESIS CONTROL PARAMETERS RANDOM VALUES MIN/MAX RANGES [MIN, MAX], ONE LIST PER PARAMETER
-synthContrParam_minMax = [[0.05, 0.75], [0.1, 0.2], [0.25, 0.4], [0.3, 0.6], [0.2, 0.3], [0.5, 0.6], [0.4, 0.55]]
-# WEIGHTS FOR CHANCES OF GENERATING NEW VALUES AT EACH FILE [TRUE, FALSE], ONE LIST PER PARAMETER
-synthContrParam_chanceNewVal = [[80,20], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75]]
-
-######## OSC_Communication_Settings ########
-oscComm_IPNumber = '127.0.01'
-oscComm_PyToMaxPD_PortNumber = 8000
-oscComm_MaxPDToPy_PortNumber = 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
-###################################################################################################
-
-datasetDescription_Dict = {
+################################# INPUT VARIABLES ####################################
+# Only make changes here !! These dict will be dumped in a .json file for future reference
+datasetGenerator_DescriptorDict = {
     'Dataset_General_Settings' : {
-        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset',
-        'audio_FIles_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-        'number_Of_Audio_files' : 10, # audio dataset size
+        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
+        'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
+        'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
-        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : True
+        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : True # either True or False
         },
 
     'Audio_Files_Settings' : {
-        'sample_Rate' : 44100, # problems with values < 44100
-        'file_Duration_Secs' : 3, 
-        'quantization_Bits' : 16, # (not used)
-        'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to numberOfFilesToBeGenerated)
-        'volume_NormRandRanges' : [0.9, 0.65], # [min, max] values for generating random volume scaling at each synthesised audio file
+        'sample_Rate' : int(44100), # problems in Max with values < 44100
+        'file_Duration_Secs' : float(3), # secs 
+        'quantization_Bits' : int(16), # (not used)
+        'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to 'number_Of_AudioFiles_ToBeGenerated')
+        'volume_NormalizedRandRanges' : [0.9, 0.65], # [min, max] values for generating random volume scaling at each synthesised audio file
         'volume_chanceNewVal' : [100, 0],
         'volume_MaxPDMapRanges' : [0., 158.] # [min, max] values expected in the Max/PD patch for volume control
         },
@@ -117,6 +82,36 @@ datasetDescription_Dict = {
         'oscComm_MaxPDToPy_PortNumber' : 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
         }
 }
+###################################################################################################
+
+################################# INPUT VARIABLES #################################### Only make changes here !!
+######## Dataset_General_Settings ########
+random.seed(datasetGenerator_DescriptorDict['Dataset_General_Settings']['random_Seed']) # for reproducibility
+
+######## Audio_Files_Settings ########
+audioFilesVolume_NormRandRanges = [0.9, 0.45] # [min, max] values for generating random volume scaling at each synthesised audio file
+audioFilesVolume_chanceNewVal = [100, 0] # [TRUE, FALSE] chances of generating new volume values at each file
+audioFilesVolume_MaxPDMapRanges = [0., 158.] # [min, max] values expected in the Max/PD patch for volume control (inspect the object in the patch !!
+
+######## Synthesis_Control_Parameters_Settings ########
+synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
+# SYNTHESIS CONTROL PARAMETERS NAMES
+synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minDepth', 'maxDepth', 'expDepth']
+# All parameters in this script are normalized between 0. and 1., but Max/PD may expect different ranges.
+# This list describe those Max/PD ranges, one list per parameter [min, max]
+synthContrParam_ranges = [[0., 100.],  [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.]]
+# The following lists must have the same length as synthContrParam_names,
+# and 1 list of length 2 for each synthesis control parameter
+# SYNTHESIS CONTROL PARAMETERS RANDOM VALUES MIN/MAX RANGES [MIN, MAX], ONE LIST PER PARAMETER
+synthContrParam_minMax = [[0.05, 0.75], [0.1, 0.2], [0.25, 0.4], [0.3, 0.6], [0.2, 0.3], [0.5, 0.6], [0.4, 0.55]]
+# WEIGHTS FOR CHANCES OF GENERATING NEW VALUES AT EACH FILE [TRUE, FALSE], ONE LIST PER PARAMETER
+synthContrParam_chanceNewVal = [[80,20], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75]]
+
+######## OSC_Communication_Settings ########
+oscComm_IPNumber = '127.0.01'
+oscComm_PyToMaxPD_PortNumber = 8000
+oscComm_MaxPDToPy_PortNumber = 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
+###################################################################################################
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
@@ -171,7 +166,7 @@ decimalPrecPoints = str('{:.') + str(synthContrParam_decPrecPoints) + str('f}')
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += synthContrParam_names # add synthesis control parameters names to the .csv file header
 csvFileFieldNameSuffix_ScaledParamValues = str('_Scaled')
-if includeInCSVFile_ParametersValues_ScaledForMaxPDRanges:
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:
     for scpName in synthContrParam_names:
         csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
@@ -221,8 +216,8 @@ for scp in range(len(synthContrParam_names)):
 '''
 
 oscSender.send_message('maxPDToPy_OSCPortNumber', receiving_from_max_pd_port)
-oscSender.send_message('sampleRate', sampleRate)
-oscSender.send_message('bufferLength_ms', int(fileDurationSecs * 1000))
+oscSender.send_message('sampleRate', datasetGenerator_DescriptorDict['Audio_Files_Settings']['sample_Rate'])
+oscSender.send_message('bufferLength_ms', int(datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Duration_Secs'] * 1000))
 
 # list of dictionaries, each dictionary represents a .csv line which will
 # be saved to a file. Each dictionary/line represents an audio file name and
@@ -231,12 +226,12 @@ synthContrParam_Dictlist = list()
 
 ############################################################################################################
 # generate audio files and save synthesis control parameters
-for fileNumber in range(numberOfFilesToBeGenerated):
+for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']):
     oscSender.send_message('clearBuffer', True)
 
     # generate audio file name and path, send message
-    audioFileName = fileNamePrefix + '_' + str(fileNumber + 1) + audioFIlesExtension
-    audioFilePath = os.path.join(pathToStoreFilesInto, audioFileName)
+    audioFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + '_' + str(fileNumber + 1) + datasetGenerator_DescriptorDict['Dataset_General_Settings']['audio_Files_Extension']
+    audioFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], audioFileName)
     oscSender.send_message('filePath', audioFilePath)
     print(f'File: {audioFileName}')
 
@@ -256,7 +251,7 @@ for fileNumber in range(numberOfFilesToBeGenerated):
             newVal_MaxPDMap = synthContrParam_lastValues[scp]
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
         thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
-        if includeInCSVFile_ParametersValues_ScaledForMaxPDRanges:
+        if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:
             thisAudioFile_Dict.update({synthContrParam_names[scp] + csvFileFieldNameSuffix_ScaledParamValues : newVal_MaxPDMap})
         print(f'    Norm {synthContrParam_names[scp]} : {newValNorm}')
         print(f'    Max/PD map {synthContrParam_names[scp]} : {newVal_MaxPDMap}')
@@ -291,14 +286,14 @@ for fileNumber in range(numberOfFilesToBeGenerated):
 ################################################################################################ finished generating audio files
 
 # print(synthContrParam_Dictlist)
-if oscReceiver.count == numberOfFilesToBeGenerated:
+if oscReceiver.count == datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']:
     print('Finished creating synthetic dataset, no errors encountered')
 else:
     print('Finished creating synthetic dataset, some errors were encountered')
 
 # generate .csv file with audio file names and synthesis control parameters
-csvFileName = fileNamePrefix + str(".csv")
-csvFilePath = os.path.join(pathToStoreFilesInto, csvFileName)
+csvFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".csv")
+csvFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], csvFileName)
 with open(csvFilePath, 'w') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames)
     writer.writeheader()
@@ -307,8 +302,8 @@ with open(csvFilePath, 'w') as csvfile:
 print(f'Finished writing {csvFileName} .csv file with synthesis control parameters')
 
 # create .json file
-jsonFileName = fileNamePrefix + str(".json")
-jsonFilePath = os.path.join(pathToStoreFilesInto, jsonFileName)
+jsonFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".json")
+jsonFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
-    json.dump(datasetDescription_Dict, jsonfile, indent=4)
+    json.dump(datasetGenerator_DescriptorDict, jsonfile, indent=4)
 print(f'Finished writing {jsonFileName} .json file with synthesis control parameters')
