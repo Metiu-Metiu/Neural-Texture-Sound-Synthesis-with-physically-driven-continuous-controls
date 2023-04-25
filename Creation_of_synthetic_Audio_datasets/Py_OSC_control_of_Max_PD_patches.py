@@ -12,19 +12,23 @@ import json
 ################################# INPUT VARIABLES ####################################
 # Only make changes here !! These dict will be dumped in a .json file for future reference
 datasetGenerator_DescriptorDict = {
+
     'Dataset_General_Settings' : {
+    
         'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
-        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : True # either True or False
+        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False # either True or False
         },
 
     'Audio_Files_Settings' : {
+    
         'sample_Rate' : int(44100), # problems in Max with values < 44100
         'file_Duration_Secs' : float(3), # secs 
         'quantization_Bits' : int(16), # (not used)
         'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to 'number_Of_AudioFiles_ToBeGenerated')
+        
         'volume' : {
             'normalizedRandomRange_Min' : 0.9, # float, min value for generating random volume, normalized between 0. and 1.
             'normalizedRandomRange_Max' : 0.65, # float, max value for generating random volume, normalized between 0. and 1.
@@ -36,48 +40,69 @@ datasetGenerator_DescriptorDict = {
         },
 
     'Synthesis_Control_Parameters_Settings' : {
-        'synthContrParam_decPrecPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
-        'avgRate' : {
-            'minValue' : 10,
-            'maxValue' : 75,
-            'chance_Generating_New_Value' : 80,
-            'chance_Retaining_Previous_File_Value' : 20
+    
+        'settings' : {
+            'decimalPrecisionPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
             },
-        'minRadius' : {
-            'minValue' : 10,
-            'maxValue' : 20,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
-            },
-        'maxRadius' : {
-            'minValue' : 25,
-            'maxValue' : 40,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
-            },
-        'expRadius' : {
-            'minValue' : 30,
-            'maxValue' : 60,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
-            },
-        'minDepth' : {
-            'minValue' : 20,
-            'maxValue' : 30,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
-            },
-        'maxDepth' : {
-            'minValue' : 50,
-            'maxValue' : 65,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
-            },
-        'expDepth' : {
-            'minValue' : 40,
-            'maxValue' : 55,
-            'chance_Generating_New_Value' : 25,
-            'chance_Retaining_Previous_File_Value' : 75
+
+        'Synthesis_Control_Parameters' : {
+    
+            'avgRate' : {
+                'normMinValue' : 0.05, 
+                'normMaxValue' : 0.75,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 80,
+                'chance_Retaining_Previous_File_Value' : 20
+                },
+            'minRadius' : {
+                'normMinValue' : 0.1,
+                'normMaxValue' : 0.2,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                },
+            'maxRadius' : {
+                'normMinValue' : 0.25,
+                'normMaxValue' : 0.4,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                },
+            'expRadius' : {
+                'normMinValue' : 0.3,
+                'normMaxValue' : 0.6,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                },
+            'minDepth' : {
+                'normMinValue' : 0.2,
+                'normMaxValue' : 0.3,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                },
+            'maxDepth' : {
+                'normMinValue' : 0.5,
+                'normMaxValue' : 0.6,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                },
+            'expDepth' : {
+                'normMinValue' : 0.4,
+                'normMaxValue' : 0.55,
+                'scaledMinValue' : 0.,
+                'scaledMaxValue' : 100.,
+                'chance_Generating_New_Value' : 25,
+                'chance_Retaining_Previous_File_Value' : 75
+                }
             }
         },
 
@@ -89,28 +114,20 @@ datasetGenerator_DescriptorDict = {
 }
 ###################################################################################################
 
-################################# INPUT VARIABLES #################################### Only make changes here !!
+###################################################################################################
 ######## Dataset_General_Settings ########
 random.seed(datasetGenerator_DescriptorDict['Dataset_General_Settings']['random_Seed']) # for reproducibility
 
 ######## Synthesis_Control_Parameters_Settings ########
-synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
-# SYNTHESIS CONTROL PARAMETERS NAMES
-synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minDepth', 'maxDepth', 'expDepth']
-# All parameters in this script are normalized between 0. and 1., but Max/PD may expect different ranges.
-# This list describe those Max/PD ranges, one list per parameter [min, max]
-synthContrParam_ranges = [[0., 100.],  [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.]]
-# The following lists must have the same length as synthContrParam_names,
-# and 1 list of length 2 for each synthesis control parameter
-# SYNTHESIS CONTROL PARAMETERS RANDOM VALUES MIN/MAX RANGES [MIN, MAX], ONE LIST PER PARAMETER
-synthContrParam_minMax = [[0.05, 0.75], [0.1, 0.2], [0.25, 0.4], [0.3, 0.6], [0.2, 0.3], [0.5, 0.6], [0.4, 0.55]]
-# WEIGHTS FOR CHANCES OF GENERATING NEW VALUES AT EACH FILE [TRUE, FALSE], ONE LIST PER PARAMETER
-synthContrParam_chanceNewVal = [[80,20], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75], [25, 75]]
-
-######## OSC_Communication_Settings ########
-oscComm_IPNumber = '127.0.01'
-oscComm_PyToMaxPD_PortNumber = 8000
-oscComm_MaxPDToPy_PortNumber = 8001 # can not be the same as oscComm_PyToMaxPD_PortNumber
+synthContrParam_names = list()
+synthContrParam_minMax = list()
+synthContrParam_ranges = list()
+synthContrParam_chanceNewVal = list()
+for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
+    synthContrParam_names.append(synthContParam)
+    synthContrParam_minMax.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue']])
+    synthContrParam_ranges.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMaxValue']])
+    synthContrParam_chanceNewVal.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Generating_New_Value'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Retaining_Previous_File_Value']])
 ###################################################################################################
 
 ############################################
@@ -162,7 +179,7 @@ class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
         self.server = BlockingOSCUDPServer(self.ip, self.receiving_from_port)
 ############################################
 
-decimalPrecPoints = str('{:.') + str(synthContrParam_decPrecPoints) + str('f}')
+decimalPrecPoints = str('{:.') + str(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints']) + str('f}')
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += synthContrParam_names # add synthesis control parameters names to the .csv file header
 csvFileFieldNameSuffix_ScaledParamValues = str('_Scaled')
@@ -171,7 +188,7 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile
         csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
 newVolumeNorm = float(decimalPrecPoints.format(random.uniform(datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Min'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Max'])))
-newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], synthContrParam_decPrecPoints)
+newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
 print(f'Generated normalized random volume : {newVolumeNorm}')
 print(f'Generated Max/PD mapped random volume : {newVolume_MaxPDMap}')
 audioFilesVolume_lastValuesNorm = newVolumeNorm
@@ -181,7 +198,7 @@ synthContrParam_lastValues = list()
 synthContrParam_lastValuesNorm = list()
 for scp in range(len(synthContrParam_names)): 
     newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
-    newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], synthContrParam_decPrecPoints)
+    newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
     print(f'Generated normalized random value : {newValNorm}')
     print(f'Generated Max/PD mapped random value : {newVal_MaxPDMap}')
     synthContrParam_lastValuesNorm.append(newValNorm)
@@ -197,13 +214,13 @@ parser.add_argument('--port', type=int, default=8000,
 args = parser.parse_args()
 
 # OSC ips / ports
-ip = oscComm_IPNumber
+ip = datasetGenerator_DescriptorDict['OSC_Communication_Settings']['oscComm_IPNumber']
 # Create OSC sender
-sending_to_max_pd_port = oscComm_PyToMaxPD_PortNumber
+sending_to_max_pd_port = datasetGenerator_DescriptorDict['OSC_Communication_Settings']['oscComm_PyToMaxPD_PortNumber']
 oscSender = udp_client.SimpleUDPClient(ip, sending_to_max_pd_port)
 print(f'Started OSC sender server with Host: {ip}, and port: {sending_to_max_pd_port}')
 # Create OSC receiver
-receiving_from_max_pd_port = oscComm_MaxPDToPy_PortNumber
+receiving_from_max_pd_port = datasetGenerator_DescriptorDict['OSC_Communication_Settings']['oscComm_MaxPDToPy_PortNumber']
 oscReceiver = OscMessageReceiver(ip, receiving_from_max_pd_port)
 # oscReceiver.start()
 print(f'Started OSC receiver server with Host: {ip}, and port: {receiving_from_max_pd_port}')
@@ -243,7 +260,7 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
     for scp in range(len(synthContrParam_names)):
         if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
             newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
-            newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], synthContrParam_decPrecPoints)
+            newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
             synthContrParam_lastValuesNorm[scp] = newValNorm
             synthContrParam_lastValues[scp] = newVal_MaxPDMap
         else: # chose not to generate  new value  
@@ -260,7 +277,7 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
     # generate (conditionally) and send audio file volume value
     if random.choices([True, False], weights=[datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['chance_Generating_New_Volume'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['chance_Retaining_Previous_File_Volume']], cum_weights=None, k=1)[0]: # chose to generate new volume or not for this file  
         newVolumeNorm = float(decimalPrecPoints.format(random.uniform(datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Min'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Max'])))
-        newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], synthContrParam_decPrecPoints)
+        newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
         print(f'    Norm volume : {newVolumeNorm}')
         print(f'    Max/PD map volume : {newVolume_MaxPDMap}')
         audioFilesVolume_lastValuesNorm = newVolumeNorm
