@@ -40,6 +40,30 @@
 		"assistshowspatchername" : 0,
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-66",
+					"maxclass" : "number",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "bang" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ -19.0, 581.0, 50.0, 19.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-61",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ -19.0, 552.0, 81.0, 19.0 ],
+					"text" : "r audioFileVolume"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-65",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -220,7 +244,7 @@
 					"patching_rect" : [ 518.5, 414.0, 50.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 359.5, 301.5, 50.0, 19.0 ],
-					"text" : "0.303143"
+					"text" : "0.455816"
 				}
 
 			}
@@ -236,7 +260,7 @@
 					"patching_rect" : [ 441.0, 414.0, 52.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 300.5, 301.5, 52.0, 19.0 ],
-					"text" : "0.63"
+					"text" : "0.58"
 				}
 
 			}
@@ -268,7 +292,7 @@
 					"patching_rect" : [ 279.0, 414.0, 50.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 184.75, 301.5, 50.0, 19.0 ],
-					"text" : "0.781327"
+					"text" : "1.25093"
 				}
 
 			}
@@ -284,7 +308,7 @@
 					"patching_rect" : [ 202.0, 414.0, 61.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 121.5, 301.5, 57.0, 19.0 ],
-					"text" : "2.407535"
+					"text" : "3.748167"
 				}
 
 			}
@@ -300,7 +324,7 @@
 					"patching_rect" : [ 114.0, 414.0, 56.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 61.5, 301.5, 56.0, 19.0 ],
-					"text" : "0.988368"
+					"text" : "1.271926"
 				}
 
 			}
@@ -309,15 +333,14 @@
 					"fontname" : "Helvetica Neue",
 					"fontsize" : 9.0,
 					"id" : "obj-43",
-					"linecount" : 2,
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 45.0, 414.0, 50.0, 29.0 ],
+					"patching_rect" : [ 45.0, 414.0, 50.0, 19.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 3.5, 301.5, 56.0, 19.0 ],
-					"text" : "50.395584"
+					"text" : "9.207085"
 				}
 
 			}
@@ -2202,6 +2225,22 @@
 				"patchline" : 				{
 					"destination" : [ "obj-16", 0 ],
 					"source" : [ "obj-60", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-32", 0 ],
+					"order" : 0,
+					"source" : [ "obj-61", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-66", 0 ],
+					"order" : 1,
+					"source" : [ "obj-61", 0 ]
 				}
 
 			}

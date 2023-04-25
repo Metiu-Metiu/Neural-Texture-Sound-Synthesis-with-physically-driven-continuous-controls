@@ -10,20 +10,23 @@ import os
 import json
 
 ########### INPUT VARIABLES ############## Only change these variables !!
-random.seed(0) # for reproducibility
+random.seed(10) # for reproducibility
 pathToStoreFilesInto = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset' # Audio files and .csv file will be stored here
 audioFIlesExtension = '.wav' # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-numberOfFilesToBeGenerated = 100 # dataset size
+numberOfFilesToBeGenerated = 10 # dataset size
 sampleRate = int(44100) # problems with values < 44100
 fileDurationSecs = float(3) # secs
 quantization = int(16) # bits (not used)
 fileNamePrefix = 'SDT_FluidFlow' # increasing numbers will be appended (1, 2, ..., up to numberOfFilesToBeGenerated)
+audioFilesVolume_NormRandRanges = [0.9, 0.45] # [min, max] values for generating random volume scaling at each synthesised audio file
+audioFilesVolume_chanceNewVal = [100, 0] # [TRUE, FALSE] chances of generating new volume values at each file
+audioFilesVolume_MaxPDMapRanges = [0., 158.] # [min, max] values expected in the Max/PD patch for volume control (inspect the object in the patch !!
 synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
 # SYNTHESIS CONTROL PARAMETERS NAMES
 synthContrParam_names = ['avgRate', 'minRadius', 'maxRadius', 'expRadius', 'minDepth', 'maxDepth', 'expDepth']
 # All parameters in this script are normalized between 0. and 1., but Max/PD may expect different ranges.
-# This list describe those ranges, one list per parameter [min, max]
-synthContrParam_ranges = [[0.,100.] for i in range(len(synthContrParam_names))]
+# This list describe those Max/PD ranges, one list per parameter [min, max]
+synthContrParam_ranges = [[0., 100.],  [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.], [0., 100.]]
 # The following lists must have the same length as synthContrParam_names,
 # and 1 list of length 2 for each synthesis control parameter
 # SYNTHESIS CONTROL PARAMETERS RANDOM VALUES MIN/MAX RANGES [MIN, MAX], ONE LIST PER PARAMETER
@@ -43,14 +46,18 @@ datasetDescription_Dict = {
         'random_Seed' : 0 # for reproducibility
         },
 
-    'Audio_File_Parameters' : {
+    'Audio_File_Settings' : {
         'sample_Rate' : 44100, # problems with values < 44100
         'file_Duration_Secs' : 3, 
         'quantization_Bits' : 16, # (not used)
         'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to numberOfFilesToBeGenerated)
+        'volume_NormRandRanges' : [0.9, 0.65], # [min, max] values for generating random volume scaling at each synthesised audio file
+        'volume_chanceNewVal' : [100, 0],
+        'volume_MaxPDMapRanges' : [0., 158.] # [min, max] values expected in the Max/PD patch for volume control
         },
 
     'Synthesis_Control_Parameters' : {
+        'synthContrParam_decPrecPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
         'avgRate' : {
             'minValue' : 10,
             'maxValue' : 75,
@@ -148,9 +155,17 @@ class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
 decimalPrecPoints = str('{:.') + str(synthContrParam_decPrecPoints) + str('f}')
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += synthContrParam_names # add synthesis control parameters names to the .csv file header
+# initialize audio file volume last values with random values
+newVolumeNorm = float(decimalPrecPoints.format(random.uniform(audioFilesVolume_NormRandRanges[0], audioFilesVolume_NormRandRanges[1])))
+newVolume_MaxPDMap = round(newVolumeNorm * (audioFilesVolume_MaxPDMapRanges[1] - audioFilesVolume_MaxPDMapRanges[0]) + audioFilesVolume_MaxPDMapRanges[0], synthContrParam_decPrecPoints)
+print(f'Generated normalized random volume : {newVolumeNorm}')
+print(f'Generated Max/PD mapped random volume : {newVolume_MaxPDMap}')
+audioFilesVolume_lastValuesNorm = newVolumeNorm
+audioFilesVolume_lastValues = newVolume_MaxPDMap
+# initialize synthesis control parameters' last values with random values
 synthContrParam_lastValues = list()
 synthContrParam_lastValuesNorm = list()
-for scp in range(len(synthContrParam_names)): # initialize last values with random values
+for scp in range(len(synthContrParam_names)): 
     newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
     newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], synthContrParam_decPrecPoints)
     print(f'Generated normalized random value : {newValNorm}')
@@ -209,28 +224,37 @@ for fileNumber in range(numberOfFilesToBeGenerated):
     # initialise dictionary for storing data with this audio file's name
     thisAudioFile_Dict = {csvFileFieldnames[0] : audioFileName}
 
-    # for each synthesis control parameter, generate a new value or use the last one
+    # for each synthesis control parameter, generate (conditionally) a new value or use the last one,
+    # then send mapped value to Max/PD and add it do dict
     for scp in range(len(synthContrParam_names)):
-        if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]:
-            # print(f'Chose to generate new value for {synthContrParam_names[scp]}')
+        if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
             newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
             newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], synthContrParam_decPrecPoints)
-            print(f'    Norm {synthContrParam_names[scp]} : {newValNorm}')
-            print(f'    Max/PD map {synthContrParam_names[scp]} : {newVal_MaxPDMap}')
             synthContrParam_lastValuesNorm[scp] = newValNorm
             synthContrParam_lastValues[scp] = newVal_MaxPDMap
-            # save the values for this parameter to the dictionary
-            thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
-        else:
-            # print(f'Chose not to generate new value for {synthContrParam_names[scp]}')
+        else: # chose not to generate  new value  
+            newValNorm = synthContrParam_lastValuesNorm[scp]
             newVal_MaxPDMap = synthContrParam_lastValues[scp]
-            # save the values for this parameter to the dictionary
-            thisAudioFile_Dict.update({synthContrParam_names[scp] : synthContrParam_lastValuesNorm[scp]})
-
-        # send value for this parameter
+        thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
-    
+        print(f'    Norm {synthContrParam_names[scp]} : {newValNorm}')
+        print(f'    Max/PD map {synthContrParam_names[scp]} : {newVal_MaxPDMap}')
+
     # when values for all parameters have been sent,
+    # generate (conditionally) and send audio file volume value
+    if random.choices([True, False], weights=audioFilesVolume_chanceNewVal, cum_weights=None, k=1)[0]: # chose to generate  new value  
+        newVolumeNorm = float(decimalPrecPoints.format(random.uniform(audioFilesVolume_NormRandRanges[0], audioFilesVolume_NormRandRanges[1])))
+        newVolume_MaxPDMap = round(newVolumeNorm * (audioFilesVolume_MaxPDMapRanges[1] - audioFilesVolume_MaxPDMapRanges[0]) + audioFilesVolume_MaxPDMapRanges[0], synthContrParam_decPrecPoints)
+        print(f'    Norm volume : {newVolumeNorm}')
+        print(f'    Max/PD map volume : {newVolume_MaxPDMap}')
+        audioFilesVolume_lastValuesNorm = newVolumeNorm
+        audioFilesVolume_lastValues = newVolume_MaxPDMap
+    else: # chose not to generate  new value  
+        newVolumeNorm = audioFilesVolume_lastValuesNorm
+        newVolume_MaxPDMap = audioFilesVolume_lastValues
+    oscSender.send_message('audioFileVolume', newVolume_MaxPDMap)
+
+    # when values for all parameters and audio volume have been sent,
     # save the info dictionary for this audio file to the list
     synthContrParam_Dictlist.append(thisAudioFile_Dict)
 
