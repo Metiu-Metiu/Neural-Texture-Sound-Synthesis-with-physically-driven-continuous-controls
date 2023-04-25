@@ -25,9 +25,14 @@ datasetGenerator_DescriptorDict = {
         'file_Duration_Secs' : float(3), # secs 
         'quantization_Bits' : int(16), # (not used)
         'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to 'number_Of_AudioFiles_ToBeGenerated')
-        'volume_NormalizedRandRanges' : [0.9, 0.65], # [min, max] values for generating random volume scaling at each synthesised audio file
-        'volume_chanceNewVal' : [100, 0],
-        'volume_MaxPDMapRanges' : [0., 158.] # [min, max] values expected in the Max/PD patch for volume control
+        'volume' : {
+            'normalizedRandomRange_Min' : 0.9, # float, min value for generating random volume, normalized between 0. and 1.
+            'normalizedRandomRange_Max' : 0.65, # float, max value for generating random volume, normalized between 0. and 1.
+            'chance_Generating_New_Volume' : 100, # int, chances of generating new volume values at each file, cumulative to 100
+            'chance_Retaining_Previous_File_Volume' : 0, # int, chances of not generating new volume values at each file, cumulative to 100
+            'maxPDScaledRanges_Min' : 0., # min value expected in the Max/PD patch for volume control
+            'maxPDScaledRanges_Max' : 158. # max value expected in the Max/PD patch for volume control
+            }
         },
 
     'Synthesis_Control_Parameters_Settings' : {
@@ -87,11 +92,6 @@ datasetGenerator_DescriptorDict = {
 ################################# INPUT VARIABLES #################################### Only make changes here !!
 ######## Dataset_General_Settings ########
 random.seed(datasetGenerator_DescriptorDict['Dataset_General_Settings']['random_Seed']) # for reproducibility
-
-######## Audio_Files_Settings ########
-audioFilesVolume_NormRandRanges = [0.9, 0.45] # [min, max] values for generating random volume scaling at each synthesised audio file
-audioFilesVolume_chanceNewVal = [100, 0] # [TRUE, FALSE] chances of generating new volume values at each file
-audioFilesVolume_MaxPDMapRanges = [0., 158.] # [min, max] values expected in the Max/PD patch for volume control (inspect the object in the patch !!
 
 ######## Synthesis_Control_Parameters_Settings ########
 synthContrParam_decPrecPoints = 2 # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
@@ -170,8 +170,8 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile
     for scpName in synthContrParam_names:
         csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
-newVolumeNorm = float(decimalPrecPoints.format(random.uniform(audioFilesVolume_NormRandRanges[0], audioFilesVolume_NormRandRanges[1])))
-newVolume_MaxPDMap = round(newVolumeNorm * (audioFilesVolume_MaxPDMapRanges[1] - audioFilesVolume_MaxPDMapRanges[0]) + audioFilesVolume_MaxPDMapRanges[0], synthContrParam_decPrecPoints)
+newVolumeNorm = float(decimalPrecPoints.format(random.uniform(datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Min'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Max'])))
+newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], synthContrParam_decPrecPoints)
 print(f'Generated normalized random volume : {newVolumeNorm}')
 print(f'Generated Max/PD mapped random volume : {newVolume_MaxPDMap}')
 audioFilesVolume_lastValuesNorm = newVolumeNorm
@@ -258,9 +258,9 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
 
     # when values for all parameters have been sent,
     # generate (conditionally) and send audio file volume value
-    if random.choices([True, False], weights=audioFilesVolume_chanceNewVal, cum_weights=None, k=1)[0]: # chose to generate  new value  
-        newVolumeNorm = float(decimalPrecPoints.format(random.uniform(audioFilesVolume_NormRandRanges[0], audioFilesVolume_NormRandRanges[1])))
-        newVolume_MaxPDMap = round(newVolumeNorm * (audioFilesVolume_MaxPDMapRanges[1] - audioFilesVolume_MaxPDMapRanges[0]) + audioFilesVolume_MaxPDMapRanges[0], synthContrParam_decPrecPoints)
+    if random.choices([True, False], weights=[datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['chance_Generating_New_Volume'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['chance_Retaining_Previous_File_Volume']], cum_weights=None, k=1)[0]: # chose to generate new volume or not for this file  
+        newVolumeNorm = float(decimalPrecPoints.format(random.uniform(datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Min'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Max'])))
+        newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], synthContrParam_decPrecPoints)
         print(f'    Norm volume : {newVolumeNorm}')
         print(f'    Max/PD map volume : {newVolume_MaxPDMap}')
         audioFilesVolume_lastValuesNorm = newVolumeNorm
