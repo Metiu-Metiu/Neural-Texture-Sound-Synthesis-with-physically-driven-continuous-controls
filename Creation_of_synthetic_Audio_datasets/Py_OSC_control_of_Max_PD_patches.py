@@ -8,6 +8,7 @@ import csv
 import os
 # import threading
 import json
+import numpy
 
 ################################# INPUT VARIABLES ####################################
 # Only make changes here !! These dict will be dumped in a .json file for future reference
@@ -19,6 +20,7 @@ datasetGenerator_DescriptorDict = {
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
+        'force_Uniform_Random_Distribution' : False, # either True or False, if True, ....
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False # either True or False
         },
 
@@ -42,7 +44,7 @@ datasetGenerator_DescriptorDict = {
     'Synthesis_Control_Parameters_Settings' : {
     
         'settings' : {
-            'decimalPrecisionPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
+            'decimalPrecisionPoints' : 4, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
             },
 
         'Synthesis_Control_Parameters' : {
@@ -52,56 +54,56 @@ datasetGenerator_DescriptorDict = {
                 'normMaxValue' : 0.75,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 80,
-                'chance_Retaining_Previous_File_Value' : 20
+                'chance_Generating_New_Value' : 100,
+                'chance_Retaining_Previous_File_Value' : 0
                 },
             'minRadius' : {
                 'normMinValue' : 0.1,
                 'normMaxValue' : 0.2,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 },
             'maxRadius' : {
                 'normMinValue' : 0.25,
                 'normMaxValue' : 0.4,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 },
             'expRadius' : {
                 'normMinValue' : 0.3,
                 'normMaxValue' : 0.6,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 },
             'minDepth' : {
                 'normMinValue' : 0.2,
                 'normMaxValue' : 0.3,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 },
             'maxDepth' : {
                 'normMinValue' : 0.5,
                 'normMaxValue' : 0.6,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 },
             'expDepth' : {
                 'normMinValue' : 0.4,
                 'normMaxValue' : 0.55,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 25,
-                'chance_Retaining_Previous_File_Value' : 75
+                'chance_Generating_New_Value' : 50,
+                'chance_Retaining_Previous_File_Value' : 50
                 }
             }
         },
@@ -119,16 +121,34 @@ datasetGenerator_DescriptorDict = {
 random.seed(datasetGenerator_DescriptorDict['Dataset_General_Settings']['random_Seed']) # for reproducibility
 
 ######## Synthesis_Control_Parameters_Settings ########
+decimalPrecPoints = str('{:.') + str(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints']) + str('f}')
 synthContrParam_names = list()
 synthContrParam_minMax = list()
 synthContrParam_ranges = list()
 synthContrParam_chanceNewVal = list()
+# Force_Uniform_Random_Distribution: each parameter has a corresponding set with unique and equally spaced values, as many as the number of audio files to be generated
+synthContrParam_ForceRandDistr_ListOfSets = list()
 for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
     synthContrParam_names.append(synthContParam)
     synthContrParam_minMax.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue']])
     synthContrParam_ranges.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMaxValue']])
     synthContrParam_chanceNewVal.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Generating_New_Value'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Retaining_Previous_File_Value']])
+    # Force_Uniform_Random_Distribution 
+    '''
+    delta_Between_EquallySpacedValues = float(decimalPrecPoints.format((float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'] - datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue']))) / float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] - 1))))
+    forced_Uniform_Distr_ListOfValues = list()
+    for i in range(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']):
+        forced_Uniform_Distr_ListOfValues.append(float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'] + float(decimalPrecPoints.format(i * delta_Between_EquallySpacedValues)))))
+    '''
+    listWithForcedUniformDistr_ForThisParam = numpy.linspace(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'], datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'])
+    for i in range(len(listWithForcedUniformDistr_ForThisParam)):
+        listWithForcedUniformDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithForcedUniformDistr_ForThisParam[i]))
+    setWithForcedUniformDistr_ForThisParam = set(listWithForcedUniformDistr_ForThisParam)
+    print(f'Forced random distribution for parameter {synthContParam}: {setWithForcedUniformDistr_ForThisParam}')
+    synthContrParam_ForceRandDistr_ListOfSets.append(setWithForcedUniformDistr_ForThisParam)
 ###################################################################################################
+
+time.sleep(60)
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
@@ -179,7 +199,6 @@ class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
         self.server = BlockingOSCUDPServer(self.ip, self.receiving_from_port)
 ############################################
 
-decimalPrecPoints = str('{:.') + str(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints']) + str('f}')
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += synthContrParam_names # add synthesis control parameters names to the .csv file header
 csvFileFieldNameSuffix_ScaledParamValues = str('_Scaled')
