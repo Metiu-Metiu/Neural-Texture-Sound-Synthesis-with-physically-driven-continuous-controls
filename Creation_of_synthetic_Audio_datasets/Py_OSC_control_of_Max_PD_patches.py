@@ -9,6 +9,22 @@ import os
 # import threading
 import json
 import numpy
+from enum import Enum
+from datetime import datetime
+ 
+class Distribution_Of_Synthesis_Control_Parameters_Values(Enum):
+    # RANDOM_UNIFORM: for each audio file, for each synth contr param, 2 stochastic processes are involved;
+        # a binary choice is randomly taken -with random.choice()-, to decide whether to generate a new synth contr param value or to re-use the same one used in the previous file
+        # if a new synth contr param value has to be generated, a value is generated randomly -with random.uniform()- within the given numerical ranges
+    # RANDOM_UNIFORM is uniform as the number of audio files to be generated approaches infinity
+    RANDOM_UNIFORM = 1
+    # LINEAR_UNIFORM_NO_REPETITIONS:
+        #  for each synth contr param, a set of unique and linearly spaced values is created (with given numerical ranges included), with 1 synth contr param value for each audio file to be generated
+        #  for each audio file, for each synth contr param, 1 stochastic process is involved; a synth contr param is randomly chosen -with random.choice()- from the 
+        #   corresponding set, and then that value is deleted from the set
+    # LINEAR_UNIFORM_NO_REPETITIONS is guaranteed to be uniform, with no repetitions of the same value for the same synt contr param
+    LINEAR_UNIFORM_NO_REPETITIONS = 2 # NO MORE THAN 1 SAME VALUE FOR EACH SYNTH CONTR PARAM (for each synth contr param, a value appears only once)
+    LINEAR_UNIFORM_ALL_COMBINATIONS = 3
 
 ################################# INPUT VARIABLES ####################################
 # Only make changes here !! These dict will be dumped in a .json file for future reference
@@ -20,8 +36,9 @@ datasetGenerator_DescriptorDict = {
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
-        'force_Uniform_Random_Distribution' : False, # either True or False, if True, ....
-        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False # either True or False
+        'distribution_Of_Synthesis_Control_Parameters_Values' : Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name,
+        'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
+        'dateAndTime_WhenGenerationFinished_dd/mm/YY H:M:S' : datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         },
 
     'Audio_Files_Settings' : {
@@ -44,7 +61,7 @@ datasetGenerator_DescriptorDict = {
     'Synthesis_Control_Parameters_Settings' : {
     
         'settings' : {
-            'decimalPrecisionPoints' : 4, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
+            'decimalPrecisionPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
             },
 
         'Synthesis_Control_Parameters' : {
@@ -120,35 +137,36 @@ datasetGenerator_DescriptorDict = {
 ######## Dataset_General_Settings ########
 random.seed(datasetGenerator_DescriptorDict['Dataset_General_Settings']['random_Seed']) # for reproducibility
 
-######## Synthesis_Control_Parameters_Settings ########
+################ Synthesis_Control_Parameters_Settings ################
 decimalPrecPoints = str('{:.') + str(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints']) + str('f}')
 synthContrParam_names = list()
 synthContrParam_minMax = list()
 synthContrParam_ranges = list()
 synthContrParam_chanceNewVal = list()
-# Force_Uniform_Random_Distribution: each parameter has a corresponding set with unique and equally spaced values, as many as the number of audio files to be generated
+######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
+# each parameter has a corresponding set with unique and equally spaced values, as many as the number of audio files to be generated
 synthContrParam_ForceRandDistr_ListOfSets = list()
+# synthContrParam_ForceRandDistr_ListOfSets contains n elements where n is the number of synthesis control parameters specified,
+# and each element is a set of generated numeric values -out of an uniform distribution- 
+# when, for each new audio file to be synthesised, a value is -randomly- chosen, that value will be deleted from the set
 for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
     synthContrParam_names.append(synthContParam)
     synthContrParam_minMax.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue']])
     synthContrParam_ranges.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMaxValue']])
     synthContrParam_chanceNewVal.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Generating_New_Value'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Retaining_Previous_File_Value']])
-    # Force_Uniform_Random_Distribution 
-    '''
-    delta_Between_EquallySpacedValues = float(decimalPrecPoints.format((float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'] - datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue']))) / float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] - 1))))
-    forced_Uniform_Distr_ListOfValues = list()
-    for i in range(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']):
-        forced_Uniform_Distr_ListOfValues.append(float(decimalPrecPoints.format(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'] + float(decimalPrecPoints.format(i * delta_Between_EquallySpacedValues)))))
-    '''
+    ######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ######## 
     listWithForcedUniformDistr_ForThisParam = numpy.linspace(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'], datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'])
+    
+    print(f'List for linear uniform distribution for parameter {synthContParam}: {listWithForcedUniformDistr_ForThisParam}')
+    
     for i in range(len(listWithForcedUniformDistr_ForThisParam)):
         listWithForcedUniformDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithForcedUniformDistr_ForThisParam[i]))
     setWithForcedUniformDistr_ForThisParam = set(listWithForcedUniformDistr_ForThisParam)
-    print(f'Forced random distribution for parameter {synthContParam}: {setWithForcedUniformDistr_ForThisParam}')
+    print(f'Set for linear uniform distribution for parameter {synthContParam}: {setWithForcedUniformDistr_ForThisParam}')
     synthContrParam_ForceRandDistr_ListOfSets.append(setWithForcedUniformDistr_ForThisParam)
-###################################################################################################
 
-time.sleep(60)
+time.sleep(120)
+######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
@@ -277,14 +295,23 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
     # for each synthesis control parameter, generate (conditionally) a new value or use the last one,
     # then send mapped value to Max/PD and add it do dict
     for scp in range(len(synthContrParam_names)):
-        if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
-            newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
+        if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name:
+            # newValNorm = float(decimalPrecPoints.format(random.choice(list(synthContrParam_ForceRandDistr_ListOfSets[scp]))))
+            newValNorm = float(decimalPrecPoints.format(list(synthContrParam_ForceRandDistr_ListOfSets[scp])[0])) # test: get the first element in the set
+            synthContrParam_ForceRandDistr_ListOfSets[scp].remove(newValNorm) # if no KeyError is raised, operation was performed successfully
             newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
-            synthContrParam_lastValuesNorm[scp] = newValNorm
-            synthContrParam_lastValues[scp] = newVal_MaxPDMap
-        else: # chose not to generate  new value  
-            newValNorm = synthContrParam_lastValuesNorm[scp]
-            newVal_MaxPDMap = synthContrParam_lastValues[scp]
+            synthContrParam_lastValuesNorm[scp] = newValNorm # redundant
+            synthContrParam_lastValues[scp] = newVal_MaxPDMap # redundant
+        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM.name:
+            if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
+                newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
+                newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
+                synthContrParam_lastValuesNorm[scp] = newValNorm
+                synthContrParam_lastValues[scp] = newVal_MaxPDMap
+            else: # chose not to generate  new value  
+                newValNorm = synthContrParam_lastValuesNorm[scp]
+                newVal_MaxPDMap = synthContrParam_lastValues[scp]
+
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
         thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
         if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:
@@ -331,7 +358,7 @@ else:
 csvFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".csv")
 csvFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], csvFileName)
 with open(csvFilePath, 'w') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames)
+    writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames, dialect='excel')
     writer.writeheader()
     for dict in synthContrParam_Dictlist:
         writer.writerow(dict)
