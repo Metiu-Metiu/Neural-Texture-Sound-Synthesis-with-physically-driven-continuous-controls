@@ -145,8 +145,8 @@ synthContrParam_ranges = list()
 synthContrParam_chanceNewVal = list()
 ######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
 # each parameter has a corresponding set with unique and equally spaced values, as many as the number of audio files to be generated
-synthContrParam_ForceRandDistr_ListOfSets = list()
-# synthContrParam_ForceRandDistr_ListOfSets contains n elements where n is the number of synthesis control parameters specified,
+synthContrParam_ForceRandDistr_ListOfLists = list()
+# synthContrParam_ForceRandDistr_ListOfLists contains n elements where n is the number of synthesis control parameters specified,
 # and each element is a list of generated numeric values -out of an uniform distribution- 
 # when, for each new audio file to be synthesised, a value is -randomly- chosen, that value will be deleted from the list
 for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
@@ -160,7 +160,7 @@ for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Paramet
         listWithForcedUniformDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithForcedUniformDistr_ForThisParam[i]))
     listWithForcedUniformDistr_ForThisParam = sorted(listWithForcedUniformDistr_ForThisParam)
     print(f'List for linear uniform distribution for parameter {synthContParam}: {listWithForcedUniformDistr_ForThisParam}')
-    synthContrParam_ForceRandDistr_ListOfSets.append(listWithForcedUniformDistr_ForThisParam)
+    synthContrParam_ForceRandDistr_ListOfLists.append(listWithForcedUniformDistr_ForThisParam)
 ######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
 
 ############################################
@@ -291,9 +291,9 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
     # then send mapped value to Max/PD and add it do dict
     for scp in range(len(synthContrParam_names)):
         if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name:
-            newValNorm = float(decimalPrecPoints.format(random.choice(synthContrParam_ForceRandDistr_ListOfSets[scp])))
-            # newValNorm = float(decimalPrecPoints.format(list(synthContrParam_ForceRandDistr_ListOfSets[scp])[0])) # test: get the first element in the list to generate values in ascending order
-            synthContrParam_ForceRandDistr_ListOfSets[scp].remove(newValNorm) # if no KeyError is raised, operation was performed successfully
+            newValNorm = float(decimalPrecPoints.format(random.choice(synthContrParam_ForceRandDistr_ListOfLists[scp])))
+            # newValNorm = float(decimalPrecPoints.format(list(synthContrParam_ForceRandDistr_ListOfLists[scp])[0])) # test: get the first element in the list to generate values in ascending order
+            synthContrParam_ForceRandDistr_ListOfLists[scp].remove(newValNorm) # if no KeyError is raised, operation was performed successfully
             newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
         elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM.name:
             if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
