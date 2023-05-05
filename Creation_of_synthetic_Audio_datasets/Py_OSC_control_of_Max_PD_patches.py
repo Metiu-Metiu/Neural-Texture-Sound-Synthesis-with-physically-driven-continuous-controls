@@ -11,6 +11,8 @@ import json
 import numpy
 from enum import Enum
 from datetime import datetime
+import math
+from itertools import product # to compute all combinations of synth contr param values for LINEAR_UNIFORM_ALL_COMBINATIONS distribution
  
 class Distribution_Of_Synthesis_Control_Parameters_Values(Enum):
     # RANDOM_UNIFORM: for each audio file, for each synth contr param, 2 stochastic processes are involved;
@@ -36,7 +38,7 @@ datasetGenerator_DescriptorDict = {
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
-        'distribution_Of_Synthesis_Control_Parameters_Values' : Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name,
+        'distribution_Of_Synthesis_Control_Parameters_Values' : Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name,
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
         'dateAndTime_WhenGenerationFinished_dd/mm/YY H:M:S' : datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         },
@@ -159,9 +161,47 @@ for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Paramet
     for i in range(len(listWithForcedUniformDistr_ForThisParam)):
         listWithForcedUniformDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithForcedUniformDistr_ForThisParam[i]))
     listWithForcedUniformDistr_ForThisParam = sorted(listWithForcedUniformDistr_ForThisParam)
-    print(f'List for linear uniform distribution for parameter {synthContParam}: {listWithForcedUniformDistr_ForThisParam}')
+    print(f'List for linear uniform distribution -no repetitions- for parameter {synthContParam}: {listWithForcedUniformDistr_ForThisParam}')
     synthContrParam_ForceRandDistr_ListOfLists.append(listWithForcedUniformDistr_ForThisParam)
 ######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
+
+######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
+# calculate, for all synth contr param, how many unique values there are gonna be. This number is the same for all synth contr param
+num_Of_Synth_Contr_Param = len(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys())
+num_Of_Unique_Values_For_All_Synth_Contr_Param = pow(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'], 1 / num_Of_Synth_Contr_Param)
+print(f'Number of unique values for all synth contr param: {num_Of_Unique_Values_For_All_Synth_Contr_Param}')
+num_Of_Unique_Values_For_All_Synth_Contr_Param = math.ceil(num_Of_Unique_Values_For_All_Synth_Contr_Param)
+print(f'Number of unique values for all synth contr param, rounded to next greater int: {num_Of_Unique_Values_For_All_Synth_Contr_Param}')
+numAudioFilesToBeGenerated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
+print(f'With prompted number of files to be generated: {numAudioFilesToBeGenerated}')
+print(f'With number of synth contr param: {num_Of_Synth_Contr_Param}')
+
+# calculate the actual number of audio files that will be generated (higher than the one prompted in the dictionary
+# since num_Of_Unique_Values_For_All_Synth_Contr_Param has to be an int and it has been rounded up)
+actual_Num_Of_AudioFiles_ToBeGenerated_LINEAR_UNIFORM_ALL_COMBINATIONS = pow(num_Of_Unique_Values_For_All_Synth_Contr_Param, num_Of_Synth_Contr_Param)
+print(f'Actual number of audio files that will be generated: {actual_Num_Of_AudioFiles_ToBeGenerated_LINEAR_UNIFORM_ALL_COMBINATIONS}')
+
+# for each synth contr param, generate the unique values
+synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists = list()
+for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
+    listWithLinearUniformAllCombinationsDistr_ForThisParam = numpy.linspace(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'], num_Of_Unique_Values_For_All_Synth_Contr_Param)
+    for i in range(len(listWithLinearUniformAllCombinationsDistr_ForThisParam)):
+        listWithLinearUniformAllCombinationsDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithLinearUniformAllCombinationsDistr_ForThisParam[i]))
+    listWithLinearUniformAllCombinationsDistr_ForThisParam = sorted(listWithLinearUniformAllCombinationsDistr_ForThisParam)
+    print(f'List for linear uniform distribution -all combinations- for parameter {synthContParam}: {listWithLinearUniformAllCombinationsDistr_ForThisParam}')
+    synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists.append(listWithLinearUniformAllCombinationsDistr_ForThisParam)
+
+# '*' unpacks the list and passes each element as a separate argument
+synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists = list(product(*synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists)) 
+for i in range(len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)): # convert tuples into lists
+    synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[i] = list(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[i])
+
+print(f'Created {len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)} combinations of different synth contr param values')
+print(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)
+
+# time.sleep(60)
+######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
+
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
@@ -274,8 +314,16 @@ oscSender.send_message('bufferLength_ms', int(datasetGenerator_DescriptorDict['A
 synthContrParam_Dictlist = list()
 
 ############################################################################################################
+number_Of_Files_To_Be_Generated = 0
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name:
+    number_Of_Files_To_Be_Generated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
+elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM.name:
+    number_Of_Files_To_Be_Generated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
+elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
+    number_Of_Files_To_Be_Generated = actual_Num_Of_AudioFiles_ToBeGenerated_LINEAR_UNIFORM_ALL_COMBINATIONS
+
 # generate audio files and save synthesis control parameters
-for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']):
+for fileNumber in range(number_Of_Files_To_Be_Generated):
     oscSender.send_message('clearBuffer', True)
 
     # generate audio file name and path, send message
@@ -304,6 +352,9 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
             else: # chose not to generate  new value  
                 newValNorm = synthContrParam_lastValuesNorm[scp]
                 newVal_MaxPDMap = synthContrParam_lastValues[scp]
+        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
+            newValNorm = synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[fileNumber][scp]
+            newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
 
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
         thisAudioFile_Dict.update({synthContrParam_names[scp] : newValNorm})
@@ -342,10 +393,16 @@ for fileNumber in range(datasetGenerator_DescriptorDict['Dataset_General_Setting
 ################################################################################################ finished generating audio files
 
 # print(synthContrParam_Dictlist)
-if oscReceiver.count == datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']:
-    print('Finished creating synthetic dataset, no errors encountered')
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
+    if oscReceiver.count == actual_Num_Of_AudioFiles_ToBeGenerated_LINEAR_UNIFORM_ALL_COMBINATIONS:
+        print('Finished creating synthetic dataset, no errors encountered')
+    else:
+        print('Finished creating synthetic dataset, some errors were encountered')
 else:
-    print('Finished creating synthetic dataset, some errors were encountered')
+    if oscReceiver.count == datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']:
+        print('Finished creating synthetic dataset, no errors encountered')
+    else:
+        print('Finished creating synthetic dataset, some errors were encountered')
 
 # generate .csv file with audio file names and synthesis control parameters
 csvFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".csv")
