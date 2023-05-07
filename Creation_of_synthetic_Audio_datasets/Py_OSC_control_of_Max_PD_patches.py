@@ -199,9 +199,45 @@ for i in range(len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists))
 print(f'Created {len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)} combinations of different synth contr param values')
 print(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)
 
-# time.sleep(60)
-######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
+def approx_factorize(x, y):
+    '''
+    x is the positive int number (> 0) to approximately factorize
+    y is a list of weights representing the wanted relative size of each factor (integers and > 0)
+    returns: a list of factors, int and > 0 ; the actual number resulting from the product of the list of factors
+    '''
+    approxFactors = y
+    haveBestApproxFactors_BeenFound = False
+    approxNumberToFactorize = 0
+    loopCounter = 1
+    lastDistanceToX = x
 
+    while (haveBestApproxFactors_BeenFound == False):
+        approxFactors = [item * loopCounter for item in y]
+        approxNumberToFactorize = numpy.prod(approxFactors)
+        currentDistanceToX = abs(x - approxNumberToFactorize)
+
+        # print(f'    loop counter = {loopCounter}')
+        # print(f'approxFactors = {approxFactors}')
+        # print(f'approxNumberToFactorize = {approxNumberToFactorize}')
+        # print(f'currentDistanceToX = {currentDistanceToX}')
+        # time.sleep(1)
+
+        if currentDistanceToX == 0 :
+            return approxFactors, numpy.prod(approxFactors)
+        elif currentDistanceToX > lastDistanceToX:
+            lastApproxFactors = [item * (loopCounter - 1) for item in y]
+            return lastApproxFactors, numpy.prod(lastApproxFactors)
+        elif currentDistanceToX < lastDistanceToX:
+            lastDistanceToX = currentDistanceToX # continue
+            loopCounter += 1
+
+promptedNumAudioFiles = 5000
+paramRelativeVariance = [4, 2, 1, 1] # len(paramRelativeVariance) = numParameters
+print('Calling factorize()...')
+numUniqueValues_ForEachParameter, actualNumAudioFiles = approx_factorize(promptedNumAudioFiles, paramRelativeVariance)
+print(f'Test factorize: {numUniqueValues_ForEachParameter} -> {actualNumAudioFiles}')
+time.sleep(60)
+######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
