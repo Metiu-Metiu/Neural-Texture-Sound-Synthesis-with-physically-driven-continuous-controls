@@ -474,6 +474,8 @@ with open(csvFilePath, 'w') as csvfile:
 print(f'Finished writing {csvFileName} .csv file with synthesis control parameters')
 
 # create .json file
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
+    datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] = actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr
 jsonFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".json")
 jsonFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
