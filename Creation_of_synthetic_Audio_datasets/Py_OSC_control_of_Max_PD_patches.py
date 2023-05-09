@@ -12,23 +12,71 @@ import numpy
 from enum import Enum
 from datetime import datetime
 import math
-from itertools import product # to compute all combinations of synth contr param values for LINEAR_UNIFORM_ALL_COMBINATIONS distribution
+from itertools import product # to compute all combinations of synth contr param values outputs for UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION distribution
  
-class Distribution_Of_Synthesis_Control_Parameters_Values(Enum):
-    # RANDOM_UNIFORM: for each audio file, for each synth contr param, 2 stochastic processes are involved;
+'''
+README
+This script allows you to generate a synthetic Audio dataset, by controlling a Max/PD patch via OSC messages.
+The Max/PD patch is a synthesiser, which -in the context of this Project- takes as input a set of synthesis control parameters (synth contr param), and outputs an audio file.
+The synth contr param, which in a Procedural Audio context represent physically-driven variables (e.g. mass, stiffness in a membrane percussion sound),
+are controlled via OSC messages sent from this script to the Max/PD patch.
+All synth contr param values for all Audio files -usable as ground truth for Machine Learning models- will also be stored in a separate .csv file.
+
+You can set some global settings for the generated dataset (e.g. number of audio files to be generated, audio files duration, path to store the files into, files names, etc.),
+as well as the specific synth contr param variables (e.g. ranges and distribution), in the datasetGenerator_DescriptorDict dictionary
+(which will be dumped in a .json file for future reference).
+Specifically, defining the Distribution_Of_Values_For_Each_Synthesis_Control_Parameter enum data structure below,
+you can control how the synth contr param values are distributed across the generated dataset.
+You can only set one unique distribution type for the entire dataset, which is valid for all the marginal distributions
+(the marginal distributions are the distributions of each of the individual variables, a.k.a. each of the individual synth contr param).
+
+Probability theory concepts: summary of Joint, Marginal, and Conditional Probability Distributions (https://en.wikipedia.org/wiki/Joint_probability_distribution )
+Given two random variables that are defined on the same probability space, the joint probability distribution is the corresponding probability distribution
+on all possible pairs of outputs. The joint distribution can just as well be considered for any given number of random variables.
+The joint distribution encodes the marginal distributions, i.e. the distributions of each of the individual random variables.
+It also encodes the conditional probability distributions, which deal with how the outputs of one random variable are distributed
+when given information on the outputs of the other random variable(s).
+'''
+
+ # This enum represents the possible settings for the marginal distributions, i.e. the distributions of each of the individual variables (in this case, the synthesis control parameters). 
+    # The marginal distributions determine the joint and conditional distributions as well,
+    # but only in UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION you can directly control the marginal and joint distributions
+ # Set the enum value for the marginal distributions in datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter']
+class Distribution_Of_Values_For_Each_Synthesis_Control_Parameter(Enum):
+    ####################################################################
+    # RANDOM_UNIFORM involves non-deterministic (except for the seed number, made for reproducibility) stochastic processes
+    # yields a marginal uniform distribution, for each synth contr param, as the number of audio files to be generated approaches infinity
+    # for each audio file, for each synth contr param, 2 stochastic processes are involved;
         # a binary choice is randomly taken -with random.choice()-, to decide whether to generate a new synth contr param value or to re-use the same one used in the previous file
         # if a new synth contr param value has to be generated, a value is generated randomly -with random.uniform()- within the given numerical ranges
-    # RANDOM_UNIFORM is uniform as the number of audio files to be generated approaches infinity
     RANDOM_UNIFORM = 1
-    # LINEAR_UNIFORM_NO_REPETITIONS:
-        #  for each synth contr param, a list of linearly spaced values is created (with given numerical ranges included), with 1 synth contr param value for each audio file to be generated
-        #  for each audio file, for each synth contr param, 1 stochastic process is involved; a synth contr param is randomly chosen -with random.choice()- from the 
-        #   corresponding set, and then that value is deleted from the set
-    # LINEAR_UNIFORM_NO_REPETITIONS is guaranteed to be uniform, with no repetitions of the same value for the same synt contr param:
-    # the number of unique values for each synth contr param is computed automatically and the same for all synth contr param
-    LINEAR_UNIFORM_NO_REPETITIONS = 2 # NO MORE THAN 1 SAME VALUE FOR EACH SYNTH CONTR PARAM (for each synth contr param, a value appears only once in the generated dataset)
-    # LINEAR_UNIFORM_ALL_COMBINATIONS:
-    LINEAR_UNIFORM_ALL_COMBINATIONS = 3
+    ####################################################################
+    # in UNIFORM_LINEARLY_SPACED_VALUES, marginal distributions are guaranteed to be uniform, but the joint distribution does not take into account all combinations of outputs between synth contr param variables
+    # in order to generate synth contr param values, no stochastic process is involved:
+        # n linearly spaced values are generated (min and max values included) for each synth contr param, with n = number of audio files to be generated,
+        # so, for each synth contr param, there is 1 different value for each audio file and thus none of the values is repeated more than once across the entire dataset
+    # the only stochastic process involved is the choice of which value to use for each audio file (in other words, a random choice is made for choosing the order of values with respect to the series of files)
+    # UNIFORM_LINEARLY_SPACED_VALUES:
+        #  for each synth contr param, a list of linearly spaced values is created (the given numerical ranges are included), producing 1 different synth contr param value for each audio file to be generated
+        #  for each audio file, for each synth contr param, only 1 stochastic process is involved; a synth contr param is randomly chosen -with random.choice()- from the corresponding pool of possible values, and then that value is deleted from the pool of future possible values
+    UNIFORM_LINEARLY_SPACED_VALUES = 2 
+    ####################################################################
+    # in UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION, both marginal and joint distributions are guaranteed to be uniform
+        # the joint distribution is guaranteed to take into account all combinations of outputs between synth contr param variables
+        # priority is given to your choice of deciding arbitrary ratios between the number of unique values for each synth contr param, useful when a synth contr param needs to have different variance than others
+            # unique values are a set of non-repeated values for each synth contr param, which will be repeated in the joint distribution as many time as needed so that every possible combinatorial match between variables outputs is covered
+            # this is why the prompted number of audio files to be generated is not necessarily respected, since it is computed automatically and
+            # it is equal to the product of the number of unique values for each synth contr param (which is computed automatically as well, by respecting the ratios between the number of unique values for each synth contr param you prompted)
+        # in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][YOUR_PARAM_NAME]['number_Of_Minimum_Unique_SynthContrParam_Values'], you can set the minimum number of unique values for each synth contr param,
+        # which will be used to compute the ratios between the number of unique values for each synth contr param
+        # (they will be respectively multiplied by an incremental int number, and the product of the enlarged numbers is checked against the prompted number of audio files to be generated (x): this process terminates when the closest possible match to x -with the prompted ratios- is reached)
+    # UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION:
+        # no stochastic process at all is involved in the generation of the synth contr param values
+        # the number of unique values for each synth contr param is computed automatically by respecting the prompted ratios between the number of unique values for each synth contr param
+        # you are asked to confirm the resultant number of audio files that will be generated (equal to all the possible combinations of unique variables values)
+        # if you decide to proceed, for each synth contr param, a list of n linearly spaced values is created (with given numerical ranges included), where n is the computed number of unique values for that synth contr param
+        # then, all combinations of unique values for all synth contr param are computed, and for each audio file, a combination of unique values is chosen
+    UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION = 3
 
 ################################# INPUT VARIABLES ####################################
 # Only make changes here !! These dict will be dumped in a .json file for future reference
@@ -38,9 +86,9 @@ datasetGenerator_DescriptorDict = {
     
         'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-        'number_Of_AudioFiles_ToBeGenerated' : int(10), # audio dataset size, MUST be an integer
+        'number_Of_AudioFiles_ToBeGenerated' : int(100), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
-        'distribution_Of_Synthesis_Control_Parameters_Values' : Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name,
+        'distribution_Of_Values_For_Each_Synthesis_Control_Parameter' : Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name,
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
         'dateAndTime_WhenGenerationFinished_dd/mm/YY H:M:S' : datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         },
@@ -75,10 +123,10 @@ datasetGenerator_DescriptorDict = {
                 'normMaxValue' : 0.75,
                 'scaledMinValue' : 0.,
                 'scaledMaxValue' : 100.,
-                'chance_Generating_New_Value' : 100, # only for Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM
-                'chance_Retaining_Previous_File_Value' : 0, # only for Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM
+                'chance_Generating_New_Value' : 100, # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM
+                'chance_Retaining_Previous_File_Value' : 0, # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 2 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'minRadius' : {
                 'normMinValue' : 0.1,
@@ -88,7 +136,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'maxRadius' : {
                 'normMinValue' : 0.25,
@@ -98,7 +146,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'expRadius' : {
                 'normMinValue' : 0.3,
@@ -108,7 +156,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'minDepth' : {
                 'normMinValue' : 0.2,
@@ -118,7 +166,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'maxDepth' : {
                 'normMinValue' : 0.5,
@@ -128,7 +176,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                  # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'expDepth' : {
                 'normMinValue' : 0.4,
@@ -138,7 +186,7 @@ datasetGenerator_DescriptorDict = {
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 2 # only for Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 }
             }
         },
@@ -161,7 +209,7 @@ synthContrParam_names = list()
 synthContrParam_minMax = list()
 synthContrParam_ranges = list()
 synthContrParam_chanceNewVal = list()
-######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
+######## Distribution_Of_Values_For_Each_Synthesis_Control_Parameter == UNIFORM_LINEARLY_SPACED_VALUES ########
 # each parameter has a corresponding set with unique and equally spaced values, as many as the number of audio files to be generated
 synthContrParam_ForceRandDistr_ListOfLists = list()
 # synthContrParam_ForceRandDistr_ListOfLists contains n elements where n is the number of synthesis control parameters specified,
@@ -172,16 +220,16 @@ for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Paramet
     synthContrParam_minMax.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue']])
     synthContrParam_ranges.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['scaledMaxValue']])
     synthContrParam_chanceNewVal.append([datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Generating_New_Value'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['chance_Retaining_Previous_File_Value']])
-    ######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ######## 
+    ######## Distribution_Of_Values_For_Each_Synthesis_Control_Parameter == UNIFORM_LINEARLY_SPACED_VALUES ######## 
     listWithForcedUniformDistr_ForThisParam = numpy.linspace(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'], datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'])
     for i in range(len(listWithForcedUniformDistr_ForThisParam)):
         listWithForcedUniformDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithForcedUniformDistr_ForThisParam[i]))
     listWithForcedUniformDistr_ForThisParam = sorted(listWithForcedUniformDistr_ForThisParam)
     # print(f'List for linear uniform distribution -no repetitions- for parameter {synthContParam}: {listWithForcedUniformDistr_ForThisParam}')
     synthContrParam_ForceRandDistr_ListOfLists.append(listWithForcedUniformDistr_ForThisParam)
-######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_NO_REPETITIONS ########
+######## end of Distribution_Of_Values_For_Each_Synthesis_Control_Parameter == UNIFORM_LINEARLY_SPACED_VALUES ########
 
-######## Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
+######## Distribution_Of_Values_For_Each_Synthesis_Control_Parameter == UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION ########
 # calculate, for all synth contr param, how many unique values there are gonna be.
 def approx_factorize(numberToFactorize, listOfFactorsRatios):
     '''
@@ -215,10 +263,10 @@ def approx_factorize(numberToFactorize, listOfFactorsRatios):
             lastDistanceToX = currentDistanceToX # continue
             loopCounter += 1
 
-if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
     promptedNumAudioFiles = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
     paramRelativeVariance = [datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][key]['number_Of_Minimum_Unique_SynthContrParam_Values'] for key in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys()]
-    numUniqueValues_ForEachParameter, actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr = approx_factorize(promptedNumAudioFiles, paramRelativeVariance)
+    numUniqueValues_ForEachParameter, actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr = approx_factorize(promptedNumAudioFiles, paramRelativeVariance)
 
     print('Computed number of unique synth contr param values:')
     i = 0
@@ -227,16 +275,16 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_
         i += 1
 
     print(f'You asked to generate {promptedNumAudioFiles} files.')
-    if promptedNumAudioFiles != actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr:
-        print(f'{actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr} files would instead satisfy all the combinations for the {i} synth contr param(s) with the prompted variance values.')
+    if promptedNumAudioFiles != actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr:
+        print(f'{actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr} files would instead satisfy all the combinations for the {i} synth contr param(s) with the prompted variance values.')
     userInput = ''
     while userInput != 'y' and userInput != 'n':
-        userInput = input(f'Go ahead and generate {actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr} Audio files  ? y = yes, n = abort program')
+        userInput = input(f'Go ahead and generate {actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr} Audio files  ? y = yes, n = abort program')
     if userInput == 'n':
         exit()
 
     # for each synth contr param, generate the unique values
-    synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists = list()
+    synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_Unique_Values_ListOfLists = list()
     synthContParamIterator = 0
     for synthContParam in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
         listWithLinearUniformAllCombinationsDistr_ForThisParam = numpy.linspace(datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMinValue'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][synthContParam]['normMaxValue'], numUniqueValues_ForEachParameter[synthContParamIterator])
@@ -244,17 +292,17 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_
             listWithLinearUniformAllCombinationsDistr_ForThisParam[i] = float(decimalPrecPoints.format(listWithLinearUniformAllCombinationsDistr_ForThisParam[i]))
         listWithLinearUniformAllCombinationsDistr_ForThisParam = sorted(listWithLinearUniformAllCombinationsDistr_ForThisParam)
         print(f'List for linear uniform distribution -all combinations- for parameter {synthContParam}: {listWithLinearUniformAllCombinationsDistr_ForThisParam}')
-        synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists.append(listWithLinearUniformAllCombinationsDistr_ForThisParam)
+        synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_Unique_Values_ListOfLists.append(listWithLinearUniformAllCombinationsDistr_ForThisParam)
         synthContParamIterator += 1
 
     # '*' unpacks the list and passes each element as a separate argument
-    synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists = list(product(*synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_Unique_Values_ListOfLists)) 
-    for i in range(len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)): # convert tuples into lists
-        synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[i] = list(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[i])
+    synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists = list(product(*synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_Unique_Values_ListOfLists)) 
+    for i in range(len(synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists)): # convert tuples into lists
+        synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists[i] = list(synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists[i])
 
-    print(f'Created {len(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)} combinations of different synth contr param values')
-    print(synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists)
-######## end of Distribution_Of_Synthesis_Control_Parameters_Values == LINEAR_UNIFORM_ALL_COMBINATIONS ########
+    print(f'Created {len(synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists)} combinations of different synth contr param values')
+    print(synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists)
+######## end of Distribution_Of_Values_For_Each_Synthesis_Control_Parameter == UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION ########
 
 ############################################
 class OscMessageReceiver(): # class OscMessageReceiver(threading.Thread):
@@ -368,13 +416,14 @@ synthContrParam_Dictlist = list()
 
 ############################################################################################################
 number_Of_Files_To_Be_Generated = 0
-if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name:
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_LINEARLY_SPACED_VALUES.name:
     number_Of_Files_To_Be_Generated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
-elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM.name:
+elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM.name:
     number_Of_Files_To_Be_Generated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
-elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
-    number_Of_Files_To_Be_Generated = actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr
+elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
+    number_Of_Files_To_Be_Generated = actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr
 
+startTime = time.time()
 # generate audio files and save synthesis control parameters
 for fileNumber in range(number_Of_Files_To_Be_Generated):
     oscSender.send_message('clearBuffer', True)
@@ -391,12 +440,12 @@ for fileNumber in range(number_Of_Files_To_Be_Generated):
     # for each synthesis control parameter, generate (conditionally) a new value or use the last one,
     # then send mapped value to Max/PD and add it do dict
     for scp in range(len(synthContrParam_names)):
-        if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_NO_REPETITIONS.name:
+        if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_LINEARLY_SPACED_VALUES.name:
             newValNorm = float(decimalPrecPoints.format(random.choice(synthContrParam_ForceRandDistr_ListOfLists[scp])))
             # newValNorm = float(decimalPrecPoints.format(list(synthContrParam_ForceRandDistr_ListOfLists[scp])[0])) # test: get the first element in the list to generate values in ascending order
             synthContrParam_ForceRandDistr_ListOfLists[scp].remove(newValNorm) # if no KeyError is raised, operation was performed successfully
             newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
-        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.RANDOM_UNIFORM.name:
+        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM.name:
             if random.choices([True, False], weights=synthContrParam_chanceNewVal[scp], cum_weights=None, k=1)[0]: # chose to generate  new value  
                 newValNorm = float(decimalPrecPoints.format(random.uniform(synthContrParam_minMax[scp][0], synthContrParam_minMax[scp][1])))
                 newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
@@ -405,8 +454,8 @@ for fileNumber in range(number_Of_Files_To_Be_Generated):
             else: # chose not to generate  new value  
                 newValNorm = synthContrParam_lastValuesNorm[scp]
                 newVal_MaxPDMap = synthContrParam_lastValues[scp]
-        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
-            newValNorm = synthContrParam_LINEAR_UNIFORM_ALL_COMBINATIONS_ListOfLists[fileNumber][scp]
+        elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
+            newValNorm = synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_ListOfLists[fileNumber][scp]
             newVal_MaxPDMap = round(newValNorm * (synthContrParam_ranges[scp][1] - synthContrParam_ranges[scp][0]) + synthContrParam_ranges[scp][0], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
 
         oscSender.send_message(synthContrParam_names[scp], newVal_MaxPDMap)
@@ -444,24 +493,14 @@ for fileNumber in range(number_Of_Files_To_Be_Generated):
     oscReceiver.oscMessageReceived_Flag = False
     print(f'Finished recording file: {audioFileName}')
 ################################################################################################ finished generating audio files
+endTime = time.time()
+generationTimeElapsed = endTime - startTime
 
 # print(synthContrParam_Dictlist)
 if oscReceiver.count == number_Of_Files_To_Be_Generated:
-    print('Finished creating synthetic dataset, no errors encountered')
+    print(f'Finished creating synthetic dataset ({number_Of_Files_To_Be_Generated} files in {generationTimeElapsed} seconds), no errors encountered')
 else:
     print('Finished creating synthetic dataset, some errors were encountered')
-'''
-if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
-    if oscReceiver.count == number_Of_Files_To_Be_Generated:
-        print('Finished creating synthetic dataset, no errors encountered')
-    else:
-        print('Finished creating synthetic dataset, some errors were encountered')
-else:
-    if oscReceiver.count == datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']:
-        print('Finished creating synthetic dataset, no errors encountered')
-    else:
-        print('Finished creating synthetic dataset, some errors were encountered')
-'''
 
 # generate .csv file with audio file names and synthesis control parameters
 csvFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".csv")
@@ -474,8 +513,8 @@ with open(csvFilePath, 'w') as csvfile:
 print(f'Finished writing {csvFileName} .csv file with synthesis control parameters')
 
 # create .json file
-if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Synthesis_Control_Parameters_Values'] == Distribution_Of_Synthesis_Control_Parameters_Values.LINEAR_UNIFORM_ALL_COMBINATIONS.name:
-    datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] = int(actualNumAudioFilesToGenerate_WithLINEAR_UNIFORM_ALL_COMBINATIONSDistr)
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
+    datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] = int(actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr)
 jsonFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".json")
 jsonFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
