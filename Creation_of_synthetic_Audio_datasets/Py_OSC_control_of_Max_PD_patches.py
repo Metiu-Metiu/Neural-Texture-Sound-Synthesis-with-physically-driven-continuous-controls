@@ -19,8 +19,10 @@ README
 This script allows you to generate a synthetic Audio dataset, by controlling a Max/PD patch via OSC messages.
 The Max/PD patch is a synthesiser, which -in the context of this Project- takes as input a set of synthesis control parameters (synth contr param), and outputs an audio file.
 The synth contr param, which in a Procedural Audio context represent physically-driven variables (e.g. mass, stiffness in a membrane percussion sound),
-are controlled via OSC messages sent from this script to the Max/PD patch.
-All synth contr param values for all Audio files -usable as ground truth for Machine Learning models- will also be stored in a separate .csv file.
+    are controlled via OSC messages sent from this script to the Max/PD patch.
+    All synth contr param values for all Audio files -usable as ground truth for Machine Learning models- will also be stored in a separate .csv file.
+    All synth contr param values are normalized between 0. and 1. in this script (again, useful if used as ground truth in ML models),
+    and then mapped to the expected ranges -settable in this scripts' dictionary- in the Max/PD patch.
 
 You can set some global settings for the generated dataset (e.g. number of audio files to be generated, audio files duration, path to store the files into, files names, etc.),
 as well as the specific synth contr param variables (e.g. ranges and distribution), in the datasetGenerator_DescriptorDict dictionary
@@ -103,7 +105,7 @@ datasetGenerator_DescriptorDict = {
         'volume' : {
             'normalizedRandomRange_Min' : 0.9, # float, min value for generating random volume, normalized between 0. and 1.
             'normalizedRandomRange_Max' : 0.65, # float, max value for generating random volume, normalized between 0. and 1.
-            'chance_Generating_New_Volume' : 100, # int, chances of generating new volume values at each file, cumulative to 100
+            'chance_Generating_New_Volume' : 1000, # int, chances of generating new volume values at each file, cumulative to 100
             'chance_Retaining_Previous_File_Volume' : 0, # int, chances of not generating new volume values at each file, cumulative to 100
             'maxPDScaledRanges_Min' : 0., # min value expected in the Max/PD patch for volume control
             'maxPDScaledRanges_Max' : 158. # max value expected in the Max/PD patch for volume control
@@ -113,76 +115,77 @@ datasetGenerator_DescriptorDict = {
     'Synthesis_Control_Parameters_Settings' : {
     
         'settings' : {
-            'decimalPrecisionPoints' : 2, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
+            # CAREFUL WITH THIS, as if too little decimal precision points are used, the generated values might not be unique
+            'decimalPrecisionPoints' : 3, # number of decimal points precisions for normalized 0. <-> 1. synthesis control parameters
             },
 
         'Synthesis_Control_Parameters' : {
     
             'avgRate' : {
-                'normMinValue' : 0.05, 
-                'normMaxValue' : 0.75,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.05, # >= 0. and <= 1.
+                'normMaxValue' : 0.75, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 100, # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM
                 'chance_Retaining_Previous_File_Value' : 0, # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.RANDOM_UNIFORM
                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 2 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
+                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'minRadius' : {
-                'normMinValue' : 0.1,
-                'normMaxValue' : 0.2,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.1, # >= 0. and <= 1.
+                'normMaxValue' : 0.2, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'maxRadius' : {
-                'normMinValue' : 0.25,
-                'normMaxValue' : 0.4,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.25, # >= 0. and <= 1.
+                'normMaxValue' : 0.4, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'expRadius' : {
-                'normMinValue' : 0.3,
-                'normMaxValue' : 0.6,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.3, # >= 0. and <= 1.
+                'normMaxValue' : 0.6, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'minDepth' : {
-                'normMinValue' : 0.2,
-                'normMaxValue' : 0.3,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.2, # >= 0. and <= 1.
+                'normMaxValue' : 0.3, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'maxDepth' : {
-                'normMinValue' : 0.5,
-                'normMaxValue' : 0.6,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.5, # >= 0. and <= 1.
+                'normMaxValue' : 0.6, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                  # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'expDepth' : {
-                'normMinValue' : 0.4,
-                'normMaxValue' : 0.55,
-                'scaledMinValue' : 0.,
-                'scaledMaxValue' : 100.,
+                'normMinValue' : 0.4, # >= 0. and <= 1.
+                'normMaxValue' : 0.55, # >= 0. and <= 1.
+                'scaledMinValue' : 0., # min val range in Max/PD patch 
+                'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
                 'chance_Retaining_Previous_File_Value' : 50,
                 # HAS TO BE INTEGER AND > 0
@@ -282,6 +285,14 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_
         userInput = input(f'Go ahead and generate {actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr} Audio files  ? y = yes, n = abort program')
     if userInput == 'n':
         exit()
+
+    # substitute the prompted number of audio files to be generated with the actual number of audio files to be generated,
+    # so that it is printed in the .json file and the end of this script
+    i = 0
+    for key in datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'].keys():
+            datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][key]['number_Of_Unique_SynthContrParam_Values'] = numUniqueValues_ForEachParameter[i]
+            del datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['Synthesis_Control_Parameters'][key]['number_Of_Minimum_Unique_SynthContrParam_Values']
+            i += 1
 
     # for each synth contr param, generate the unique values
     synthContrParam_UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION_Unique_Values_ListOfLists = list()
