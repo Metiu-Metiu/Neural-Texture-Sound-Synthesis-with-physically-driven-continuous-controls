@@ -10,7 +10,7 @@ import os
 import json
 import numpy
 from enum import Enum
-from datetime import datetime
+import datetime
 import math
 from itertools import product # to compute all combinations of synth contr param values outputs for UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION distribution
  
@@ -92,7 +92,7 @@ datasetGenerator_DescriptorDict = {
         'random_Seed' : 0, # for reproducibility
         'distribution_Of_Values_For_Each_Synthesis_Control_Parameter' : Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name,
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
-        'dateAndTime_WhenGenerationFinished_dd/mm/YY H:M:S' : datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        'dateAndTime_WhenGenerationFinished_dd/mm/YY H:M:S' : datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         },
 
     'Audio_Files_Settings' : {
@@ -505,11 +505,12 @@ for fileNumber in range(number_Of_Files_To_Be_Generated):
     print(f'Finished recording file: {audioFileName}')
 ################################################################################################ finished generating audio files
 endTime = time.time()
-generationTimeElapsed = endTime - startTime
+generationTimeElapsed = round(endTime - startTime)
+generationTimeElapsed = str(datetime.timedelta(seconds = generationTimeElapsed))
 
 # print(synthContrParam_Dictlist)
 if oscReceiver.count == number_Of_Files_To_Be_Generated:
-    print(f'Finished creating synthetic dataset ({number_Of_Files_To_Be_Generated} files in {generationTimeElapsed} seconds), no errors encountered')
+    print(f'Finished creating synthetic dataset ({number_Of_Files_To_Be_Generated} files in {generationTimeElapsed} time), no errors encountered')
 else:
     print('Finished creating synthetic dataset, some errors were encountered')
 
@@ -524,8 +525,12 @@ with open(csvFilePath, 'w') as csvfile:
 print(f'Finished writing {csvFileName} .csv file with synthesis control parameters')
 
 # create .json file
-if datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
-    datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated'] = int(actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr)
+datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_Generated'] = int(number_Of_Files_To_Be_Generated)
+del datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
+total_Dataset_Audio_Files_Duration_secs = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_Generated'] * datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Duration_Secs']
+datasetGenerator_DescriptorDict['Dataset_General_Settings']['total_Dataset_Audio_Files_Duration_H:M:S'] = str(datetime.timedelta(seconds = total_Dataset_Audio_Files_Duration_secs))
+datasetGenerator_DescriptorDict['Dataset_General_Settings']['time_Elapsed_During_Generation_H:M:S'] = generationTimeElapsed
+
 jsonFileName = datasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + str(".json")
 jsonFilePath = os.path.join(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'], jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
