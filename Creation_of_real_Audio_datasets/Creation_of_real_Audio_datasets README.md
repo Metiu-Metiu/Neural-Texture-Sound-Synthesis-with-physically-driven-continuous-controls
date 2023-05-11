@@ -36,6 +36,10 @@ A description of the dataset files and their organization can be found here; htt
 - FSD50K.ground_truth
 - FSD50K.metadata
 
+To ensure that no one accidentaly makes some changes on the canonical dataset, I also called the following terminal command (on MacOS) where path is the path to the FSD50K folder:
+
+<b>```sudo chmod -R a-w,u+rx path```</b>
+
 ## virtEnv folder
 
 This folder contains the virtual environment used to run the script soundata_test.py.
