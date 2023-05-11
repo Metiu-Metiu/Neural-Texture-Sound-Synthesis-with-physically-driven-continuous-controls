@@ -1,0 +1,8 @@
+{"pitch_hz":
+    {
+        "value": { "type": "number" },
+        "dense": true,
+        "description": "[DEPRECATED] Pitch in Hz"
+    }
+}
+
