@@ -30,9 +30,9 @@ realSoundsDataset_Creator_Dict = {
 
     'subset_Settings': {
         'createSubset': True, # either True or False
-        'tags_ToExtractFromCanonicalDataset': ['Water'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'tags_ToAvoidFromCanonicalDataset': ['Gurgling'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
+        'tags_ToExtractFromCanonicalDataset': list(['Water']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'tags_ToAvoidFromCanonicalDataset': list(['Gurgling']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'subsetTags_Policy': Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile, 
     },
 
     'outputDataset_Settings': {
@@ -41,31 +41,34 @@ realSoundsDataset_Creator_Dict = {
 }
 ############################################# end INPUT VARIABLES
 
-datasetTags = ['Water', 'Ocean', 'Gurgling']
-subsetTags = ['Ocean', 'Water']
-subetTags_ToAvoid = ['Pompe']
+##########
+def do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(datasetTags, subsetTags, subetTags_ToAvoid):
+    if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile:
+        if collections.Counter(subsetTags) == collections.Counter(datasetTags):
+            # print('AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile')
+            return True
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile:
+        if all(tag in datasetTags for tag in subsetTags):
+            # print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile')
+            return True
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+        if all(tag in datasetTags for tag in subsetTags):
+            if not any(tag in datasetTags for tag in subetTags_ToAvoid):
+                # print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
+                return True
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile:
+        if any(tag in datasetTags for tag in subsetTags):
+            # print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile')
+            return True
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+        if any(tag in datasetTags for tag in subsetTags):
+            if not any(tag in datasetTags for tag in subetTags_ToAvoid):
+                # print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
+                return True
+    else:
+        return False
+##########
 
-if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile:
-    if collections.Counter(subsetTags) == collections.Counter(datasetTags):
-        print('AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile')
-elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile:
-    if all(tag in datasetTags for tag in subsetTags):
-        print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile')
-elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-    if all(tag in datasetTags for tag in subsetTags):
-        if not any(tag in datasetTags for tag in subetTags_ToAvoid):
-            print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
-elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile:
-    if any(tag in datasetTags for tag in subsetTags):
-        print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile')
-elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-    if any(tag in datasetTags for tag in subsetTags):
-        if not any(tag in datasetTags for tag in subetTags_ToAvoid):
-            print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
-
-
-
-'''
 if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.SOUNDATA:
     dataset_Loader = soundata.initialize(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Name'], data_home = realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath'])
     if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['download_CanonicalDataset']:
@@ -80,30 +83,10 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
     subsetDataset_NoAugm_Size = 0
     devCsvFile_Dict = dataset_Loader.load_ground_truth('/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K/FSD50K.ground_truth/dev.csv')[0] # load the ground truth labels for the dataset
     for key, value in devCsvFile_Dict.items():
-        if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile or realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-            if collections.Counter(value['tags']) == collections.Counter(realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']):
-                if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-                    for tagToAvoid in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']:
-                        if tagToAvoid in value['tags']:
-                            break
-                    print(key, value)
-                    subsetDataset_NoAugm_Size += 1
-                    break
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile or realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-            skipThisClip = False
-            for tagToExtract in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']:
-                if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
-                    for tagToAvoid in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']:
-                        if tagToAvoid in value['tags']:
-                            print(f'{key} : {Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name}')
-                            skipThisClip = True
-                            break
-                    if skipThisClip:
-                        break
-                if tagToExtract in value['tags']:
-                    print(key, value)
-                    subsetDataset_NoAugm_Size += 1
-                    break
+        if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(value['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+            subsetDataset_NoAugm_Size += 1
+            # print(f'{key} : {value["tags"]}')
+
     extractedTags = realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']
     print(f'Found {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
 
@@ -112,4 +95,3 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
 # if segment_AudioClips is True, segment the audio
 # finally, copy all the segments in the subset dataset folder
 # continue the loop until all clips in the dataset have been processed 
-'''
