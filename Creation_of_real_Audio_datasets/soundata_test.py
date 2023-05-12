@@ -101,15 +101,14 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                     # segment the audio
                     canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_DevAudioFilesFolder_Path, canonicalFileName))
                     segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
-                    audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True)
+                    audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
                     segmentNum = 1
                     if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
                         for segment in audioSegments:
-                            if len(segment) == segmentSize_Samp:
-                                output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), (str(key) + str('_') + str(segmentNum) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                                essentia.MonoWriter(filename = output_file_path)(segment)
-                                segmentNum += 1
-                                subsetDataset_Augm_Size += 1
+                            output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), (str(key) + str('_') + str(segmentNum) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                            essentia.MonoWriter(filename = output_file_path)(segment)
+                            segmentNum += 1
+                            subsetDataset_Augm_Size += 1
                 else:
                     shutil.copy2(os.path.join(canonicalDataset_DevAudioFilesFolder_Path, canonicalFileName), os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), canonicalFileName))
                     subsetDataset_NoAugm_Size += 1
