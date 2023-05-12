@@ -1,2 +1,3 @@
 soundata
 numpy==1.24.3
+essentia==2.1b6
