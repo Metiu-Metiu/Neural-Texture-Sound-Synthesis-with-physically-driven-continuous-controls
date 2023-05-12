@@ -5,11 +5,12 @@ import collections
 class Loader_Library(Enum):
     SOUNDATA = 1
 
-class Subset_Tags_Policy(Enum):
-    AllSubsetTagsArePresentInCanonicalDatasetFile = 1
-    AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 2
-    AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile = 3
-    AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 4
+class Subset_Tags_Policy(Enum): # all computations are made regardless of tags order in all lists
+    AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile = 1 
+    AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile = 2
+    AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 3
+    AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile = 4
+    AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 5
 
 ############## INPUT VARIABLES here ##############
 realSoundsDataset_Creator_Dict = {
@@ -30,8 +31,8 @@ realSoundsDataset_Creator_Dict = {
     'subset_Settings': {
         'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': ['Water'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'tags_ToAvoidFromCanonicalDataset': ['Ocean'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
+        'tags_ToAvoidFromCanonicalDataset': ['Gurgling'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
     },
 
     'outputDataset_Settings': {
@@ -40,7 +41,31 @@ realSoundsDataset_Creator_Dict = {
 }
 ############################################# end INPUT VARIABLES
 
+datasetTags = ['Water', 'Ocean', 'Gurgling']
+subsetTags = ['Ocean', 'Water']
+subetTags_ToAvoid = ['Pompe']
 
+if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile:
+    if collections.Counter(subsetTags) == collections.Counter(datasetTags):
+        print('AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile')
+elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile:
+    if all(tag in datasetTags for tag in subsetTags):
+        print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile')
+elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+    if all(tag in datasetTags for tag in subsetTags):
+        if not any(tag in datasetTags for tag in subetTags_ToAvoid):
+            print('AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
+elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile:
+    if any(tag in datasetTags for tag in subsetTags):
+        print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile')
+elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+    if any(tag in datasetTags for tag in subsetTags):
+        if not any(tag in datasetTags for tag in subetTags_ToAvoid):
+            print('AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot')
+
+
+
+'''
 if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.SOUNDATA:
     dataset_Loader = soundata.initialize(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Name'], data_home = realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath'])
     if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['download_CanonicalDataset']:
@@ -87,3 +112,4 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
 # if segment_AudioClips is True, segment the audio
 # finally, copy all the segments in the subset dataset folder
 # continue the loop until all clips in the dataset have been processed 
+'''
