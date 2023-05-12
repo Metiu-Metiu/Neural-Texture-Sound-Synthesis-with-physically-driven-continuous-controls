@@ -7,7 +7,9 @@ class Loader_Library(Enum):
 
 class Subset_Tags_Policy(Enum):
     AllSubsetTagsArePresentInCanonicalDatasetFile = 1
-    OneSubsetTagIsPresentInCanonicalDatasetFile = 2
+    AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 2
+    AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile = 3
+    AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 4
 
 ############## INPUT VARIABLES here ##############
 realSoundsDataset_Creator_Dict = {
@@ -28,7 +30,8 @@ realSoundsDataset_Creator_Dict = {
     'subset_Settings': {
         'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': ['Water'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.OneSubsetTagIsPresentInCanonicalDatasetFile, 
+        'tags_ToAvoidFromCanonicalDataset': ['Ocean'], # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'subsetTags_Policy': Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
     },
 
     'outputDataset_Settings': {
@@ -52,13 +55,26 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
     subsetDataset_NoAugm_Size = 0
     devCsvFile_Dict = dataset_Loader.load_ground_truth('/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K/FSD50K.ground_truth/dev.csv')[0] # load the ground truth labels for the dataset
     for key, value in devCsvFile_Dict.items():
-        if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile:
+        if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile or realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
             if collections.Counter(value['tags']) == collections.Counter(realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']):
-                print(key, value)
-                subsetDataset_NoAugm_Size += 1
-                break
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.OneSubsetTagIsPresentInCanonicalDatasetFile:
+                if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllSubsetTagsArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+                    for tagToAvoid in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']:
+                        if tagToAvoid in value['tags']:
+                            break
+                    print(key, value)
+                    subsetDataset_NoAugm_Size += 1
+                    break
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile or realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+            skipThisClip = False
             for tagToExtract in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']:
+                if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot:
+                    for tagToAvoid in realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']:
+                        if tagToAvoid in value['tags']:
+                            print(f'{key} : {Subset_Tags_Policy.AtLeastOneSubsetTagIsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name}')
+                            skipThisClip = True
+                            break
+                    if skipThisClip:
+                        break
                 if tagToExtract in value['tags']:
                     print(key, value)
                     subsetDataset_NoAugm_Size += 1
