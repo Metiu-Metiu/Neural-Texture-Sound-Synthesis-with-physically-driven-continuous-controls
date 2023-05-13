@@ -35,8 +35,8 @@ realSoundsDataset_Creator_Dict = {
     'subset_Settings': {
         'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'tags_ToAvoidFromCanonicalDataset': list(['Rain']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
+        'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'subsetTags_Policy': Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot, 
     },
 
     'outputDataset_Settings': {
@@ -75,52 +75,67 @@ def do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(datasetTags, sub
 
 if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.SOUNDATA:
     dataset_Loader = soundata.initialize(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Name'], data_home = os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']))
+    devSplit_SubFolder_Name = 'FSD50K.dev_audio'
+    evalSplit_SubFolder_Name = 'FSD50K.eval_audio'
     if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['download_CanonicalDataset']:
         dataset_Loader.download(cleanup = True)  # download the canonical version of the dataset
     if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['validate_CanonicalDataset']:
         dataset_Loader.validate()  # validate that all the expected files are there
 
-    # example_clip = dataset_Loader.choice_clip()  # choose a random example clip
-    # print(example_clip.audio_path)  
-    # print(example_clip.audio[1]) 
-
-    # Create output dataset destination directory if it doesn't exist
     os.makedirs(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), exist_ok=True)
+    os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), str(devSplit_SubFolder_Name)), exist_ok=True)
+    os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), str(evalSplit_SubFolder_Name)), exist_ok=True)
 
     subsetDataset_NoAugm_Size = 0
     subsetDataset_Augm_Size = 0
-    canonicalDataset_DevAudioFilesFolder_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.dev_audio')
+    
     groundTruth_Dev_CsvFile_SubPath = 'FSD50K.ground_truth/dev.csv' # relative to canonicalDataset_LocationPath
-    new_pgroundTruth_Dev_CsvFile_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), groundTruth_Dev_CsvFile_SubPath)
-    devCsvFile_Dict = dataset_Loader.load_ground_truth(new_pgroundTruth_Dev_CsvFile_Path)[0] # load the ground truth labels for the dataset
-    if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']:
-        for key, value in devCsvFile_Dict.items():
-            canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
-            if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(value['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
-                if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']:
-                    # segment the audio
-                    canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_DevAudioFilesFolder_Path, canonicalFileName))
-                    segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
-                    audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
-                    segmentNum = 1
-                    if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
-                        for segment in audioSegments:
-                            output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), (str(key) + str('_') + str(segmentNum) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                            essentia.MonoWriter(filename = output_file_path)(segment)
-                            segmentNum += 1
-                            subsetDataset_Augm_Size += 1
-                else:
-                    shutil.copy2(os.path.join(canonicalDataset_DevAudioFilesFolder_Path, canonicalFileName), os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), canonicalFileName))
-                    subsetDataset_NoAugm_Size += 1
-    else:
-        print('Why should you copy the entire caonical dataset if you don\'t want to create a subset of it?')
-        exit()
+    groundTruth_Eval_CsvFile_SubPath = 'FSD50K.ground_truth/eval.csv' # relative to canonicalDataset_LocationPath
+    
+    numberOfSplitsInDataset = 2
+    outputSubFolderSplitName = str()
+    for split in range(numberOfSplitsInDataset):
+        if split == 0: # dev split
+            groundTruth_CsvFile_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), groundTruth_Dev_CsvFile_SubPath)
+            canonicalDataset_AudioFilesFolder_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), devSplit_SubFolder_Name)
+            outputSubFolderSplitName = devSplit_SubFolder_Name
+        elif split == 1: # eval split
+            groundTruth_CsvFile_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), groundTruth_Eval_CsvFile_SubPath)
+            canonicalDataset_AudioFilesFolder_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), evalSplit_SubFolder_Name)
+            outputSubFolderSplitName = evalSplit_SubFolder_Name
 
-    extractedTags = realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']
-    if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']:
-        print(f'Found {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
-    else:
-        print(f'Found {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
+        devCsvFile_Dict = dataset_Loader.load_ground_truth(groundTruth_CsvFile_Path)[0] # load the ground truth labels for the dataset
+        if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']:
+            for key, value in devCsvFile_Dict.items():
+                canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
+                if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(value['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                    if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']:
+                        canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
+                        segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
+                        audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
+                        segmentNum = 1
+                        if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
+                            for segment in audioSegments:
+                                output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), str(outputSubFolderSplitName), (str(key) + str('_') + str(segmentNum) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                essentia.MonoWriter(filename = output_file_path)(segment)
+                                segmentNum += 1
+                                subsetDataset_Augm_Size += 1
+                    else:
+                        shutil.copy2(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName), os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_CreationFolder']), canonicalFileName))
+                        subsetDataset_NoAugm_Size += 1
+        else:
+            print('Why should you copy the entire caonical dataset if you don\'t want to create a subset of it?')
+            exit()
+
+        extractedTags = realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']
+        if split == 0:
+            print(f'DEV SPLIT DATASET CREATED')
+        elif split == 1:
+            print(f'EVAL SPLIT DATASET CREATED')
+        if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']:
+            print(f'Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
+        else:
+            print(f'Created {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
 
 # go through each clip in the dataset and check its label
 # if the label is one of the labels we want to extract, then get the clip's audio
