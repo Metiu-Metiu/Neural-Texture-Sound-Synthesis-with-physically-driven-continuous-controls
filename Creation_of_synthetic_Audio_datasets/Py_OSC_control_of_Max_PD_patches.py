@@ -370,6 +370,10 @@ csvFileFieldNameSuffix_ScaledParamValues = str('_Scaled')
 if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:
     for scpName in synthContrParam_names:
         csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
+volumeFieldName = str('volume')
+csvFileFieldnames += volumeFieldName
+if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:  
+    csvFileFieldnames += [volumeFieldName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
 newVolumeNorm = float(decimalPrecPoints.format(random.uniform(datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Min'], datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['normalizedRandomRange_Max'])))
 newVolume_MaxPDMap = round(newVolumeNorm * (datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Max'] - datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min']) + datasetGenerator_DescriptorDict['Audio_Files_Settings']['volume']['maxPDScaledRanges_Min'], datasetGenerator_DescriptorDict['Synthesis_Control_Parameters_Settings']['settings']['decimalPrecisionPoints'])
@@ -489,6 +493,11 @@ for fileNumber in range(number_Of_Files_To_Be_Generated):
         newVolumeNorm = audioFilesVolume_lastValuesNorm
         newVolume_MaxPDMap = audioFilesVolume_lastValues
     oscSender.send_message('audioFileVolume', newVolume_MaxPDMap)
+
+    # save volume value to dict
+    thisAudioFile_Dict.update({volumeFieldName : newVolumeNorm})
+    if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:
+        thisAudioFile_Dict.update({volumeFieldName : newVolume_MaxPDMap})
 
     # when values for all parameters and audio volume have been sent,
     # save the info dictionary for this audio file to the list
