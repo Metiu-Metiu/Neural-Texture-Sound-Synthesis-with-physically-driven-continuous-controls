@@ -10,21 +10,21 @@ After the HOW TO USE section, you can find a brief description of the scripts,  
 
 ## <strong>HOW TO USE</strong>
 
-In order to generate a synthetic Audio dataset, you need to run the script Py_OSC_control_of_Max_PD_patches.py, which will control a Max/PD patch via OSC messages. 
+In order to generate a synthetic Audio dataset, you need to run the script Creation_of_synthetic_Audio_datasets.py, which will control a Max/PD patch via OSC messages. 
 
-Max_8_OSC_receiver.maxpat is provided to receive OSC messages from the script Py_OSC_control_of_Max_PD_patches.py and dispatch messages to whatever other Max patch (obtained from 3rd parties, not produced in this Project) containing the actual Audio synthesis engine. An example of external Audio synthesis engine is provided in the SDT_v2.2-078 (Sound Design Toolkit) folder (see the corresponding section).
+Max_8_OSC_receiver.maxpat is provided to receive OSC messages from the script Creation_of_synthetic_Audio_datasets.py and dispatch messages to whatever other Max patch (obtained from 3rd parties, not produced in this Project) containing the actual Audio synthesis engine. An example of external Audio synthesis engine is provided in the SDT_v2.2-078 (Sound Design Toolkit) folder (see the corresponding section).
 
 You can set some global settings for the generated dataset (e.g. number of audio files to be generated, audio files duration, path to store the files into, files names, etc.), as well as the specific synth contr param variables (e.g. ranges and distribution), in the datasetGenerator_DescriptorDict dictionary (which will be dumped in a .json file for future reference).
 
 ### <b>Dataset generation</b>
 
-Open Py_OSC_control_of_Max_PD_patches.py, Max_8_OSC_receiver.maxpat and the Max patch containing the actual Audio synthesis engine (you can slightly modify it in order to receive the correct synth contr param with the correct names).
+Open Creation_of_synthetic_Audio_datasets.py, Max_8_OSC_receiver.maxpat and the Max patch containing the actual Audio synthesis engine (you can slightly modify it in order to receive the correct synth contr param with the correct names).
 
-In Max_8_OSC_receiver.maxpat, set udpreceive argument (port n.) to whatever variable you set in Py_OSC_control_of_Max_PD_patches.py -> oscComm_PyToMaxPD_PortNumber (default = 8000). 
+In Max_8_OSC_receiver.maxpat, set udpreceive argument (port n.) to whatever variable you set in Creation_of_synthetic_Audio_datasets.py -> oscComm_PyToMaxPD_PortNumber (default = 8000). 
 
 To speed up the Dataset generation process, you can set the Max/PD patch to generate audio files in a faster-than-realtime fashion (e.g. in MacOS, Max 8, go to Options -> Audio Status -> Driver -> NonRealTime).
 
-## <strong>Py_OSC_control_of_Max_PD_patches.py</strong>
+## <strong>Creation_of_synthetic_Audio_datasets.py</strong>
 
 This script allows you to generate a synthetic Audio dataset, by controlling a Max/PD patch via OSC messages.
 
@@ -107,7 +107,7 @@ No stochastic process at all is involved in the generation of the synth contr pa
 
 ## <strong>Max_8_OSC_receiver.maxpat</strong>
 
-You can use this Max patch to receive OSC message from the script Py_OSC_control_of_Max_PD_patches.py and dispatch messages to another Max patch containing the actual Audio synthesis engine.
+You can use this Max patch to receive OSC message from the script Creation_of_synthetic_Audio_datasets.py and dispatch messages to another Max patch containing the actual Audio synthesis engine.
 
 ## <strong>Py_OSC_control_of_Max_PD_patches folder</strong>
 

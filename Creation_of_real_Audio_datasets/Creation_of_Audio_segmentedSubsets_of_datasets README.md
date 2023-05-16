@@ -9,7 +9,7 @@ REAL SOUNDS DATASET(S) CREATION
 
 This repo does not contain the actual created dataset because they are too large to be contained here; nevertheless, you can find a section in this README file for each of the examples used in this Project, with instructions fdor reproducibility
   
-## soundata_test.py
+## Creation_of_Audio_segmentedSubsets_of_datasets.py
 
 This script is used to test the soundata library (loader for some datasets of interest, like FSD50K). It is based on the example provided in the library's documentation.
 Also, this script;
@@ -17,6 +17,7 @@ Also, this script;
 - downloads the CANONICAL VERSION OF THE FSD50K dataset (if not already downloaded)
 - validates the CANONICAL VERSION OF THE FSD50K dataset
 - creates a new subset of the dataset (called "FSD50K_10") containing only the wanted classes from the original 200, like 'water' only
+- if requested, segments the audio files of the new subset into smaller audio files of a given duration (e.g. 10 seconds). Chunks which would be smaller than the specified duration are discarded.
 
 ### FSD50K (dataset folder not included in this repo)
 
@@ -42,6 +43,6 @@ To ensure that no one accidentaly makes some changes on the canonical dataset, I
 
 ## virtEnv folder
 
-This folder contains the virtual environment used to run the script soundata_test.py.
+This folder contains the virtual environment used to run the script Creation_of_Audio_segmentedSubsets_of_datasets.py.
 
 See requirements.txt for a list of installed packages (in my System, soundata was installed but, when tried to run the script, an error occurred for a missing numpy wheel; I hence updated numpy).
