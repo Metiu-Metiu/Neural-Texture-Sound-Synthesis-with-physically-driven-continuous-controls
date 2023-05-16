@@ -36,7 +36,7 @@ realSoundsDataset_Creator_Dict = {
     },
 
     'subset_Settings': {
-        'createSubset': True, # either True or False
+        'createSubset': False, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name, 
@@ -125,11 +125,11 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
         with open(outputCsvFilePath, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames = outputCsvFileFieldnames, dialect='excel')
             writer.writeheader()
-            if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']:
+            if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']: # SUBSET ###############################################################
                 for key, value in devCsvFile_Dict.items():
                     canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
                     if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(value['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
-                        if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']:
+                        if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
                             canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
                             segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
                             audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
@@ -148,16 +148,43 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                                     writer.writerow(csvRowDict)
                                     segmentNum += 1
                                     subsetDataset_Augm_Size += 1
-                        else:
-                            shutil.copy2(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName), os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), canonicalFileName))
+                        else: # NO SEGMENTATION ##########################################################################################################
+                            output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), canonicalFileName)
+                            if os.path.exists(output_file_path):
+                                print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                exit()
+                            shutil.copy2(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName), output_file_path)
                             csvRowDict = {'fname': str(key), 'labels': value['tags'], 'mids': value['mids']}
                             if split == 0: # only for dev split
                                 csvRowDict.update({'split': value['split']})
                             writer.writerow(csvRowDict)
                             subsetDataset_NoAugm_Size += 1
-            else:
-                print('Why should you copy the entire canonical dataset if you don\'t want to create a subset of it?')
-                exit()
+            elif realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] == False: # NO SUBSET ##########################################
+                if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
+                    # THIS OPTION WILL LIKELY CREATE A HHUUGGEE DATASET, BE AWARE OF WHAT YOU DO !!!!!!!!!!!!
+                    for key, value in devCsvFile_Dict.items():
+                        canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
+                        canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
+                        segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
+                        audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
+                        segmentNum = 1
+                        if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
+                            for segment in audioSegments:
+                                outpuFileName = str(str(key) + str('_') + str(segmentNum))
+                                output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                if os.path.exists(output_file_path):
+                                    print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                    exit()
+                                essentia.MonoWriter(filename = output_file_path)(segment)
+                                csvRowDict = {'fname': str(outpuFileName), 'labels': value['tags'], 'mids': value['mids']}
+                                if split == 0: # only for dev split
+                                    csvRowDict.update({'split': value['split']})
+                                writer.writerow(csvRowDict)
+                                segmentNum += 1
+                                subsetDataset_Augm_Size += 1
+                else: # NO SEGMENTATION ##########################################################################################################
+                    print('Why should you copy the entire canonical dataset if you don\'t want to create a subset of it, nor segment it ?')
+                    exit()
 
         extractedTags = realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset']
         if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] and realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']: ##########
@@ -169,7 +196,7 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                 print(f'CREATED EVAL SPLIT OF SEGMENTED SUBSET DATASET')
                 print(f'    Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
                 realSoundsDataset_Creator_Dict['outputDataset_Statistics']['numberOfFilesCreated_In_Segmented_EvalSplit_Subset_Dataset'] = subsetDataset_Augm_Size
-        elif realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: ##########
+        elif realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: #############################################
             if split == 0:
                 print(f'CREATED DEV SPLIT OF SEGMENTED DATASET')
                 print(f'    Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
@@ -178,14 +205,14 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                 print(f'CREATED EVAL SPLIT OF SEGMENTED DATASET')
                 print(f'    Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
                 realSoundsDataset_Creator_Dict['outputDataset_Statistics']['numberOfFilesCreated_In_Segmented_EvalSplit_Dataset'] = subsetDataset_Augm_Size
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']: ##########
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']: #########################################################################
             if split == 0:
                 print(f'CREATED DEV SPLIT OF SUBSET DATASET')
-                print(f'    Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
+                print(f'    Created {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
                 realSoundsDataset_Creator_Dict['outputDataset_Statistics']['numberOfFilesCreated_In_DevSplit_Subset_Dataset'] = subsetDataset_NoAugm_Size
             elif split == 1:
                 print(f'CREATED EVAL SPLIT OF SUBSET DATASET')
-                print(f'    Created {subsetDataset_Augm_Size} Audio files with tags {extractedTags}')
+                print(f'    Created {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
                 realSoundsDataset_Creator_Dict['outputDataset_Statistics']['numberOfFilesCreated_In_EvalSplit_Subset_Dataset'] = subsetDataset_NoAugm_Size
 
 # create .json file with realSoundsDataset_Creator_Dict
