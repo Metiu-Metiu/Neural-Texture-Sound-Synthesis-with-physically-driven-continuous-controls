@@ -6,6 +6,7 @@ import shutil # for copying files in case no Audio segmentation is needed
 import essentia.standard as essentia
 import csv
 import json
+import pandas # to merge dev and eval .csv files into one .csv file
 
 class Loader_Library(Enum):
     SOUNDATA = 1
@@ -47,6 +48,7 @@ realSoundsDataset_Creator_Dict = {
         'outputDataset_DevSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName, '' not to put the dev split in a subfolder
         'outputDataset_EvalSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the dev split in a subfolder
         'outputDataset_GroundTruthCsvFiles_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the .csv files in a subfolder
+        'merge_DevAndEvalSplits_CsvFilesIntoOne': True, # either True or False
     }
 }
 ############################################# end INPUT VARIABLES
@@ -188,9 +190,19 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
 
 # create .json file with realSoundsDataset_Creator_Dict
 os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName'])), exist_ok=True)
-
 jsonFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str(".json")
 jsonFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
     json.dump(realSoundsDataset_Creator_Dict, jsonfile, indent=4)
 print(f'Finished writing {jsonFileName} .json file with realSoundsDataset_Creator_Dict')
+
+# merge the output .csv files into one single .csv file
+if realSoundsDataset_Creator_Dict['outputDataset_Settings']['merge_DevAndEvalSplits_CsvFilesIntoOne']:
+    devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
+    evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
+    devCsvFile_DF = pandas.read_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv'))
+    evalCsvFile_DF = pandas.read_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv'))
+    merged_df = pandas.concat([devCsvFile_DF, evalCsvFile_DF], axis = 0)
+    merged_df.to_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), str(str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('.csv'))), index=False)
+    os.remove(devCsvFilePath)
+    os.remove(evalCsvFilePath)
