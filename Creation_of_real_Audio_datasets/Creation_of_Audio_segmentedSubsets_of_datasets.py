@@ -31,15 +31,15 @@ realSoundsDataset_Creator_Dict = {
     },
 
     'canonicalDatasetAugmentation_Settings': {
-        'segment_AudioClips': True, # either True or False
+        'segment_AudioClips': False, # either True or False
         'segments_Length_Secs': float(3.0), # seconds,
     },
 
     'subset_Settings': {
-        'createSubset': False, # either True or False
+        'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name, 
+        'subsetTags_Policy': Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name, 
     },
 
     'outputDataset_Settings': {
@@ -48,7 +48,7 @@ realSoundsDataset_Creator_Dict = {
         'outputDataset_DevSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName, '' not to put the dev split in a subfolder
         'outputDataset_EvalSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the dev split in a subfolder
         'outputDataset_GroundTruthCsvFiles_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the .csv files in a subfolder
-        'merge_DevAndEvalSplits_CsvFilesIntoOne': True, # either True or False
+        'merge_DevAndEvalSplits_CsvFilesIntoOne': False, # either True or False
     }
 }
 ############################################# end INPUT VARIABLES
@@ -122,6 +122,7 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
         outputCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), outputCsvFileName)
 
         devCsvFile_Dict = dataset_Loader.load_ground_truth(groundTruth_CsvFile_Path)[0] # load the ground truth labels for the dataset
+
         with open(outputCsvFilePath, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames = outputCsvFileFieldnames, dialect='excel')
             writer.writeheader()
@@ -223,12 +224,43 @@ with open(jsonFilePath, 'w') as jsonfile:
     json.dump(realSoundsDataset_Creator_Dict, jsonfile, indent=4)
 print(f'Finished writing {jsonFileName} .json file with realSoundsDataset_Creator_Dict')
 
+# evaluate the subset dataset (count how many rows in the .csv files contain the subset tags substrings)
+if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] and realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] == False:
+    input_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'dev.csv')
+    input_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'eval.csv')
+    input_devCsvFile_DF = pandas.read_csv(input_devCsvFilePath)
+    input_evalCsvFile_DF = pandas.read_csv(input_evalCsvFilePath)
+    
+    output_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
+    output_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
+    output_devCsvFile_DF = pandas.read_csv(output_devCsvFilePath)
+    output_evalCsvFile_DF = pandas.read_csv(output_evalCsvFilePath)
+    numRows_output_devCsvFile_DF = output_devCsvFile_DF.shape[0]
+    numRows_output_evalCsvFile_DF = output_evalCsvFile_DF.shape[0]
+    print(f'    Number of rows in output dev.csv file: {numRows_output_devCsvFile_DF}')
+    print(f'    Number of rows in output eval.csv file: {numRows_output_evalCsvFile_DF}')
+
+    if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name:
+        if numRows_output_devCsvFile_DF > 0:
+            print(output_devCsvFile_DF['labels'][0])
+            numMatchingRows = (input_devCsvFile_DF['labels'] == output_devCsvFile_DF['labels'][0]).all(axis=0).sum()
+            print(f'    Number of rows in output dev.csv file that match the subset tags: {numMatchingRows}')
+'''
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name:
+
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
+
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile.name:
+
+    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
+'''
+    
 # merge the output .csv files into one single .csv file
 if realSoundsDataset_Creator_Dict['outputDataset_Settings']['merge_DevAndEvalSplits_CsvFilesIntoOne']:
     devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
     evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
-    devCsvFile_DF = pandas.read_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv'))
-    evalCsvFile_DF = pandas.read_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv'))
+    devCsvFile_DF = pandas.read_csv(devCsvFilePath)
+    evalCsvFile_DF = pandas.read_csv(evalCsvFilePath)
     merged_df = pandas.concat([devCsvFile_DF, evalCsvFile_DF], axis = 0)
     merged_df.to_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), str(str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('.csv'))), index=False)
     os.remove(devCsvFilePath)
