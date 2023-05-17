@@ -31,14 +31,14 @@ realSoundsDataset_Creator_Dict = {
     },
 
     'canonicalDatasetAugmentation_Settings': {
-        'segment_AudioClips': False, # either True or False
+        'segment_AudioClips': True, # either True or False
         'segments_Length_Secs': float(3.0), # seconds,
     },
 
     'subset_Settings': {
-        'createSubset': True, # either True or False
-        'tags_ToExtractFromCanonicalDataset': list(['Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'tags_ToAvoidFromCanonicalDataset': list(['Water']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'createSubset': False, # either True or False
+        'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Gurgling', 'Steam', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name, 
     },
 
@@ -48,7 +48,7 @@ realSoundsDataset_Creator_Dict = {
         'outputDataset_DevSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName, '' not to put the dev split in a subfolder
         'outputDataset_EvalSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the dev split in a subfolder
         'outputDataset_GroundTruthCsvFiles_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the .csv files in a subfolder
-        'merge_DevAndEvalSplits_CsvFilesIntoOne': False, # either True or False
+        'merge_DevAndEvalSplits_CsvFilesIntoOne': True, # either True or False
     }
 }
 ############################################# end INPUT VARIABLES
@@ -156,7 +156,8 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                     else:
                         canonicalFileName = csvReaderRow[0] + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
                         canonicalFileName_NoExt = csvReaderRow[0]
-                        if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputCsvFile_Dict[csvReaderRow[0]]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                        copyOfCsvReaderRow = csvReaderRow
+                        if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputCsvFile_Dict[copyOfCsvReaderRow[0]]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
                             if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
                                 canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
                                 segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
@@ -174,7 +175,7 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                                         csvReaderRow_FileNameModified[0] = str(outpuFileName)
                                         csvWriter.writerow(csvReaderRow_FileNameModified)
                                         outputCsvFile_Dict[outpuFileName] = dict()
-                                        outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[csvReaderRow[0]]
+                                        outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[canonicalFileName_NoExt]
                                         segmentNum += 1
                                         subsetDataset_Augm_Size += 1
                             else: # NO SEGMENTATION ##########################################################################################################
@@ -191,26 +192,34 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
             elif realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] == False: # NO SUBSET ##########################################
                 if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
                     # THIS OPTION WILL LIKELY CREATE A HHUUGGEE DATASET, BE AWARE OF WHAT YOU DO !!!!!!!!!!!!
+                    csvReaderRowCounter = 0
                     for csvReaderRow in csvReader:
-                        canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
-                        segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
-                        audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
-                        segmentNum = 1
-                        if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
-                            for segment in audioSegments:
-                                outpuFileName = str(str(csvReaderRow[0]) + str('_') + str(segmentNum))
-                                output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                                if os.path.exists(output_file_path):
-                                    print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
-                                    exit()
-                                essentia.MonoWriter(filename = output_file_path)(segment)
-                                csvReaderRow_FileNameModified = csvReaderRow
-                                csvReaderRow_FileNameModified[0] = str(outpuFileName)
-                                csvWriter.writerow(csvReaderRow_FileNameModified)
-                                outputCsvFile_Dict[outpuFileName] = dict()
-                                outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[csvReaderRow[0]]
-                                segmentNum += 1
-                                subsetDataset_Augm_Size += 1
+                        if csvReaderRowCounter == 0:
+                            csvWriter.writerow(csvReaderRow)
+                        else:
+                            canonicalFileName = csvReaderRow[0] + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
+                            canonicalFileName_NoExt = csvReaderRow[0]
+                            copyOfCsvReaderRow = csvReaderRow
+                            canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
+                            segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
+                            audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
+                            segmentNum = 1
+                            if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
+                                for segment in audioSegments:
+                                    outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
+                                    output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                    if os.path.exists(output_file_path):
+                                        print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                        exit()
+                                    essentia.MonoWriter(filename = output_file_path)(segment)
+                                    csvReaderRow_FileNameModified = csvReaderRow
+                                    csvReaderRow_FileNameModified[0] = str(outpuFileName)
+                                    csvWriter.writerow(csvReaderRow_FileNameModified)
+                                    outputCsvFile_Dict[outpuFileName] = dict()
+                                    outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[canonicalFileName_NoExt]
+                                    segmentNum += 1
+                                    subsetDataset_Augm_Size += 1
+                        csvReaderRowCounter += 1
                 else: # NO SEGMENTATION ##########################################################################################################
                     print('Why should you copy the entire canonical dataset if you don\'t want to create a subset of it, nor segment it ?')
                     exit()
