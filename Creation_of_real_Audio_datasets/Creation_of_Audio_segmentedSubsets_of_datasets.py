@@ -37,8 +37,8 @@ realSoundsDataset_Creator_Dict = {
 
     'subset_Settings': {
         'createSubset': True, # either True or False
-        'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'tags_ToExtractFromCanonicalDataset': list(['Truck']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
+        'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Wood']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name, 
     },
 
@@ -268,47 +268,26 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
         # print(f'    Number of rows in output dev.csv file: {numRows_output_devCsvFile_DF}')
         # print(f'    Number of rows in output eval.csv file: {numRows_output_evalCsvFile_DF}')
 
-        if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name:
-            if numRows_output_devCsvFile_DF > 1:
-                occurrences = input_devCsvFile_DF['labels'].value_counts()[output_devCsvFile_DF['labels'].iloc[0]]
-                if occurrences == numRows_output_devCsvFile_DF:
-                    print_EvaluationStatus_Of_DevSubset(True)
-                else:
-                    print_EvaluationStatus_Of_DevSubset(False)
-            if numRows_output_evalCsvFile_DF > 1:
-                occurrences = input_evalCsvFile_DF['labels'].value_counts()[output_evalCsvFile_DF['labels'].iloc[0]]
-                if occurrences == numRows_output_evalCsvFile_DF:
-                    print_EvaluationStatus_Of_EvalSubset(True)
-                else:
-                    print_EvaluationStatus_Of_EvalSubset(False)
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name:
-            if numRows_output_devCsvFile_DF > 1:
-                inputDevCsvFile_Dict = dataset_Loader.load_ground_truth(input_devCsvFilePath)[0] 
-                occurrences = 0
-                for key in inputDevCsvFile_Dict.keys():
-                    if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputDevCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
-                        occurrences += 1
-                if occurrences == numRows_output_devCsvFile_DF:
-                    print_EvaluationStatus_Of_DevSubset(True)
-                else:
-                    print_EvaluationStatus_Of_DevSubset(False)
-            if numRows_output_evalCsvFile_DF > 1:
-                inputEvalCsvFile_Dict = dataset_Loader.load_ground_truth(input_evalCsvFilePath)[0] 
-                occurrences = 0
-                for key in inputEvalCsvFile_Dict.keys():
-                    if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputEvalCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
-                        occurrences += 1
-                if occurrences == numRows_output_evalCsvFile_DF:
-                    print_EvaluationStatus_Of_EvalSubset(True)
-                else:
-                    print_EvaluationStatus_Of_EvalSubset(False)
-    '''
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
-
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile.name:
-
-        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
-    '''
+        if numRows_output_devCsvFile_DF > 1:
+            inputDevCsvFile_Dict = dataset_Loader.load_ground_truth(input_devCsvFilePath)[0] 
+            occurrences = 0
+            for key in inputDevCsvFile_Dict.keys():
+                if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputDevCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                    occurrences += 1
+            if occurrences == numRows_output_devCsvFile_DF:
+                print_EvaluationStatus_Of_DevSubset(True)
+            else:
+                print_EvaluationStatus_Of_DevSubset(False)
+        if numRows_output_evalCsvFile_DF > 1:
+            inputEvalCsvFile_Dict = dataset_Loader.load_ground_truth(input_evalCsvFilePath)[0] 
+            occurrences = 0
+            for key in inputEvalCsvFile_Dict.keys():
+                if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputEvalCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                    occurrences += 1
+            if occurrences == numRows_output_evalCsvFile_DF:
+                print_EvaluationStatus_Of_EvalSubset(True)
+            else:
+                print_EvaluationStatus_Of_EvalSubset(False)
 
     # merge the output .csv files into one single .csv file
     if realSoundsDataset_Creator_Dict['outputDataset_Settings']['merge_DevAndEvalSplits_CsvFilesIntoOne']:
