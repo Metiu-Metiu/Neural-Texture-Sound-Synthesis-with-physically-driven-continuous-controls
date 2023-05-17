@@ -1,25 +1,42 @@
-# Synthetic-to-real Unsupervised Domain Adaptation
+# Creation_of_Audio_segmentedSubsets_of_datasets
 
-This folder is dedicated to software designed to perform:
+This folder is dedicated to software designed to take an already existing dataset of audio files and <b>create a new dataset containing only a subset of the original dataset, with the possibility to segment the audio files</b> into subsequent smaller audio files of a given duration (e.g. 10 seconds). Chunks which would be smaller than the specified duration are discarded.
 
-REAL SOUNDS DATASET(S) CREATION
-- load canonical versions of datasets of interest (like FSD50K)
-- validate canonical version of downloaded and loaded dataset
-- create sub-datasets from the canonical version (like FSD50K with 'water' AudioSet class only)
+The already existing dataset is called the 'canonical' version of the dataset.
+The subset is the dataset produced by the script 'Creation_of_Audio_segmentedSubsets_of_datasets.py', by only selecting the files in the canonical dataset which have the wanted classes (e.g. 'water' only).
 
-This repo does not contain the actual created dataset because they are too large to be contained here; nevertheless, you can find a section in this README file for each of the examples used in this Project, with instructions fdor reproducibility
-  
+You can enter many settings in the dictionary 'realSoundsDataset_Creator_Dict' in the script 'Creation_of_Audio_segmentedSubsets_of_datasets.py' to create the wanted subset of the dataset.
+
+This repo does not contain the actual created dataset because they are too large to be contained here; nevertheless, you can find a section in this README file for each of the examples used in this Project, with instructions for reproducibility.
+
 ## Creation_of_Audio_segmentedSubsets_of_datasets.py
 
-This script is used to test the soundata library (loader for some datasets of interest, like FSD50K). It is based on the example provided in the library's documentation.
-Also, this script;
+You can enter many settings in the dictionary 'realSoundsDataset_Creator_Dict' in the script 'Creation_of_Audio_segmentedSubsets_of_datasets.py' to create the wanted subset of the dataset.
 
-- downloads the CANONICAL VERSION OF THE FSD50K dataset (if not already downloaded)
-- validates the CANONICAL VERSION OF THE FSD50K dataset
-- creates a new subset of the dataset (called "FSD50K_10") containing only the wanted classes from the original 200, like 'water' only
-- if requested, segments the audio files of the new subset into smaller audio files of a given duration (e.g. 10 seconds). Chunks which would be smaller than the specified duration are discarded.
+Particular attention has bee put on the <b>criteria of labels/tags matching between the original dataset and the subset</b> (see do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy()). 
+The 5 options are:
 
-### FSD50K (dataset folder not included in this repo)
+<b>
+- AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile
+  
+- AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile
+  
+- AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot
+  
+- AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile
+  
+- AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot
+</b>
+
+This algorithm has been tested and evaluated on the FSD50K dataset, but it can be used for any dataset of audio files.
+The tags of the FSD50K dataset are the labels from the <b>AudioSet Ontology</b>, and are taken from dev/eval splits .csv files.
+
+The dictionary 'realSoundsDataset_Creator_Dict' is bumped into a .json file for future reference in the same folder as the output subset/segmented dataset.
+The same applies to the ground truth (labels/tags) values of the subset/segmented dataset; both .csv files and python dict (.json files) are created in the output dataset folder.
+
+Up to May 16th 2023, the script is designed to work with the <b>soundata library</b> and the <b>FSD50K dataset</b>.
+
+### FSD50K (canonical dataset folder not included in this repo)
 
 The FSD50K dataset is a dataset of 51,197 sound clips from Freesound annotated with labels from the AudioSet Ontology. It is a subset of the Freesound dataset (FSD) created for the task of sound event detection. The dataset is described in the paper: [FSD50K: an Open Dataset of Human-Labeled Sound Events](https://arxiv.org/abs/2010.00475).
 
