@@ -39,7 +39,7 @@ realSoundsDataset_Creator_Dict = {
         'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name, 
+        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name, 
     },
 
     'outputDataset_Settings': {
@@ -52,6 +52,20 @@ realSoundsDataset_Creator_Dict = {
     }
 }
 ############################################# end INPUT VARIABLES
+
+##########
+def print_EvaluationStatus_Of_DevSubset(isSuccessfullyEvaluated):
+    if isSuccessfullyEvaluated:
+        print(f'    Output dev.csv file has been successfully evaluated.')
+    else:
+        print(f'    Output dev.csv file has NOT been successfully evaluated.')
+
+def print_EvaluationStatus_Of_EvalSubset(isSuccessfullyEvaluated):
+    if isSuccessfullyEvaluated:
+        print(f'    Output eval.csv file has been successfully evaluated.')
+    else:
+        print(f'    Output eval.csv file has NOT been successfully evaluated.')
+##########
 
 ##########
 def do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(datasetTags, subsetTags, subetTags_ToAvoid):
@@ -102,6 +116,7 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
     if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] or realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']:
         realSoundsDataset_Creator_Dict['outputDataset_Statistics'] = {}
     
+    outputCsvFile_Dict = dict()
     numberOfSplitsInDataset = 2
     for split in range(numberOfSplitsInDataset):
         subsetDataset_NoAugm_Size = 0
@@ -121,66 +136,72 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
 
         outputCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), outputCsvFileName)
 
-        devCsvFile_Dict = dataset_Loader.load_ground_truth(groundTruth_CsvFile_Path)[0] # load the ground truth labels for the dataset
+        inputCsvFile_Dict = dataset_Loader.load_ground_truth(groundTruth_CsvFile_Path)[0] # load the ground truth labels for the dataset
 
-        with open(outputCsvFilePath, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames = outputCsvFileFieldnames, dialect='excel')
-            writer.writeheader()
+        with open(groundTruth_CsvFile_Path, 'r') as inputCsvfile, open(outputCsvFilePath, 'w') as outputCsvFile:
+            csvReader = csv.reader(inputCsvfile)
+            csvWriter = csv.writer(outputCsvFile)
             if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']: # SUBSET ###############################################################
-                for key, value in devCsvFile_Dict.items():
-                    canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
-                    if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(value['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
-                        if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
-                            canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
-                            segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
-                            audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
-                            segmentNum = 1
-                            if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
-                                for segment in audioSegments:
-                                    outpuFileName = str(str(key) + str('_') + str(segmentNum))
-                                    output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                                    if os.path.exists(output_file_path):
-                                        print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
-                                        exit()
-                                    essentia.MonoWriter(filename = output_file_path)(segment)
-                                    csvRowDict = {'fname': str(outpuFileName), 'labels': value['tags'], 'mids': value['mids']}
-                                    if split == 0: # only for dev split
-                                        csvRowDict.update({'split': value['split']})
-                                    writer.writerow(csvRowDict)
-                                    segmentNum += 1
-                                    subsetDataset_Augm_Size += 1
-                        else: # NO SEGMENTATION ##########################################################################################################
-                            output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), canonicalFileName)
-                            if os.path.exists(output_file_path):
-                                print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
-                                exit()
-                            shutil.copy2(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName), output_file_path)
-                            csvRowDict = {'fname': str(key), 'labels': value['tags'], 'mids': value['mids']}
-                            if split == 0: # only for dev split
-                                csvRowDict.update({'split': value['split']})
-                            writer.writerow(csvRowDict)
-                            subsetDataset_NoAugm_Size += 1
+                csvReaderRowCounter = 0
+                for csvReaderRow in csvReader:
+                    if csvReaderRowCounter == 0:
+                        csvWriter.writerow(csvReaderRow)
+                    else:
+                        canonicalFileName = csvReaderRow[0] + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
+                        canonicalFileName_NoExt = csvReaderRow[0]
+                        if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputCsvFile_Dict[csvReaderRow[0]]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                            if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
+                                canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
+                                segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
+                                audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
+                                segmentNum = 1
+                                if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
+                                    for segment in audioSegments:
+                                        outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
+                                        output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                        if os.path.exists(output_file_path):
+                                            print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                            exit()
+                                        essentia.MonoWriter(filename = output_file_path)(segment)
+                                        csvReaderRow_FileNameModified = csvReaderRow
+                                        csvReaderRow_FileNameModified[0] = str(outpuFileName)
+                                        csvWriter.writerow(csvReaderRow_FileNameModified)
+                                        outputCsvFile_Dict[outpuFileName] = dict()
+                                        outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[csvReaderRow[0]]
+                                        segmentNum += 1
+                                        subsetDataset_Augm_Size += 1
+                            else: # NO SEGMENTATION ##########################################################################################################
+                                output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), canonicalFileName)
+                                if os.path.exists(output_file_path):
+                                    print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                    exit()
+                                shutil.copy2(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName), output_file_path)
+                                csvWriter.writerow(csvReaderRow)
+                                outputCsvFile_Dict[csvReaderRow[0]] = dict()
+                                outputCsvFile_Dict[csvReaderRow[0]] = inputCsvFile_Dict[csvReaderRow[0]]
+                                subsetDataset_NoAugm_Size += 1 # end if csvReaderRowCounter == 0/else:
+                    csvReaderRowCounter += 1
             elif realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] == False: # NO SUBSET ##########################################
                 if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
                     # THIS OPTION WILL LIKELY CREATE A HHUUGGEE DATASET, BE AWARE OF WHAT YOU DO !!!!!!!!!!!!
-                    for key, value in devCsvFile_Dict.items():
-                        canonicalFileName = key + realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format']
+                    for csvReaderRow in csvReader:
                         canonicalFileAudioWaveF_AndSR = dataset_Loader.load_audio(os.path.join(canonicalDataset_AudioFilesFolder_Path, canonicalFileName))
                         segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileAudioWaveF_AndSR[1])
                         audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF_AndSR[0], frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
                         segmentNum = 1
                         if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
                             for segment in audioSegments:
-                                outpuFileName = str(str(key) + str('_') + str(segmentNum))
+                                outpuFileName = str(str(csvReaderRow[0]) + str('_') + str(segmentNum))
                                 output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
                                 if os.path.exists(output_file_path):
                                     print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
                                     exit()
                                 essentia.MonoWriter(filename = output_file_path)(segment)
-                                csvRowDict = {'fname': str(outpuFileName), 'labels': value['tags'], 'mids': value['mids']}
-                                if split == 0: # only for dev split
-                                    csvRowDict.update({'split': value['split']})
-                                writer.writerow(csvRowDict)
+                                csvReaderRow_FileNameModified = csvReaderRow
+                                csvReaderRow_FileNameModified[0] = str(outpuFileName)
+                                csvWriter.writerow(csvReaderRow_FileNameModified)
+                                outputCsvFile_Dict[outpuFileName] = dict()
+                                outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[csvReaderRow[0]]
                                 segmentNum += 1
                                 subsetDataset_Augm_Size += 1
                 else: # NO SEGMENTATION ##########################################################################################################
@@ -216,52 +237,87 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                 print(f'    Created {subsetDataset_NoAugm_Size} Audio files with tags {extractedTags}')
                 realSoundsDataset_Creator_Dict['outputDataset_Statistics']['numberOfFilesCreated_In_EvalSplit_Subset_Dataset'] = subsetDataset_NoAugm_Size
 
-# create .json file with realSoundsDataset_Creator_Dict
-os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName'])), exist_ok=True)
-jsonFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str(".json")
-jsonFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), jsonFileName)
-with open(jsonFilePath, 'w') as jsonfile:
-    json.dump(realSoundsDataset_Creator_Dict, jsonfile, indent=4)
-print(f'Finished writing {jsonFileName} .json file with realSoundsDataset_Creator_Dict')
+    # create .json file with realSoundsDataset_Creator_Dict
+    os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName'])), exist_ok=True)
+    jsonFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('_creatorDescriptorDict') + str(".json")
+    jsonFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), jsonFileName)
+    with open(jsonFilePath, 'w') as jsonfile:
+        json.dump(realSoundsDataset_Creator_Dict, jsonfile, indent=4)
+    print(f'Finished writing {jsonFileName} .json file with realSoundsDataset_Creator_Dict')
 
-# evaluate the subset dataset (count how many rows in the .csv files contain the subset tags substrings)
-if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] and realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] == False:
-    input_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'dev.csv')
-    input_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'eval.csv')
-    input_devCsvFile_DF = pandas.read_csv(input_devCsvFilePath)
-    input_evalCsvFile_DF = pandas.read_csv(input_evalCsvFilePath)
-    
-    output_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
-    output_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
-    output_devCsvFile_DF = pandas.read_csv(output_devCsvFilePath)
-    output_evalCsvFile_DF = pandas.read_csv(output_evalCsvFilePath)
-    numRows_output_devCsvFile_DF = output_devCsvFile_DF.shape[0]
-    numRows_output_evalCsvFile_DF = output_evalCsvFile_DF.shape[0]
-    print(f'    Number of rows in output dev.csv file: {numRows_output_devCsvFile_DF}')
-    print(f'    Number of rows in output eval.csv file: {numRows_output_evalCsvFile_DF}')
+    # create .json file with outputCsvFile_Dict
+    outputCsvFile_Dict_JsonFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('_groundTruthDict') + str(".json")
+    outputCsvFile_Dict_JsonFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), outputCsvFile_Dict_JsonFileName)
+    with open(outputCsvFile_Dict_JsonFilePath, 'w') as jsonfile:
+        json.dump(outputCsvFile_Dict, jsonfile, indent=4)
+    print(f'Finished writing {outputCsvFile_Dict_JsonFileName}.json file with outputCsvFile_Dict, number of keys: {len(outputCsvFile_Dict.keys())}')
 
-    if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name:
-        if numRows_output_devCsvFile_DF > 0:
-            print(output_devCsvFile_DF['labels'][0])
-            numMatchingRows = (input_devCsvFile_DF['labels'] == output_devCsvFile_DF['labels'][0]).all(axis=0).sum()
-            print(f'    Number of rows in output dev.csv file that match the subset tags: {numMatchingRows}')
-'''
-    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name:
+    # evaluate the subset dataset (count how many rows in the .csv files contain the subset tags substrings)
+    if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] and realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] == False:
+        input_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'dev.csv')
+        input_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']), 'FSD50K.ground_truth', 'eval.csv')
+        input_devCsvFile_DF = pandas.read_csv(input_devCsvFilePath)
+        input_evalCsvFile_DF = pandas.read_csv(input_evalCsvFilePath)
+        
+        output_devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
+        output_evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
+        output_devCsvFile_DF = pandas.read_csv(output_devCsvFilePath)
+        output_evalCsvFile_DF = pandas.read_csv(output_evalCsvFilePath)
+        numRows_output_devCsvFile_DF = output_devCsvFile_DF.shape[0]
+        numRows_output_evalCsvFile_DF = output_evalCsvFile_DF.shape[0]
+        # print(f'    Number of rows in output dev.csv file: {numRows_output_devCsvFile_DF}')
+        # print(f'    Number of rows in output eval.csv file: {numRows_output_evalCsvFile_DF}')
 
-    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
+        if realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile.name:
+            if numRows_output_devCsvFile_DF > 1:
+                occurrences = input_devCsvFile_DF['labels'].value_counts()[output_devCsvFile_DF['labels'].iloc[0]]
+                if occurrences == numRows_output_devCsvFile_DF:
+                    print_EvaluationStatus_Of_DevSubset(True)
+                else:
+                    print_EvaluationStatus_Of_DevSubset(False)
+            if numRows_output_evalCsvFile_DF > 1:
+                occurrences = input_evalCsvFile_DF['labels'].value_counts()[output_evalCsvFile_DF['labels'].iloc[0]]
+                if occurrences == numRows_output_evalCsvFile_DF:
+                    print_EvaluationStatus_Of_EvalSubset(True)
+                else:
+                    print_EvaluationStatus_Of_EvalSubset(False)
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile.name:
+            if numRows_output_devCsvFile_DF > 1:
+                inputDevCsvFile_Dict = dataset_Loader.load_ground_truth(input_devCsvFilePath)[0] 
+                occurrences = 0
+                for key in inputDevCsvFile_Dict.keys():
+                    if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputDevCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                        occurrences += 1
+                if occurrences == numRows_output_devCsvFile_DF:
+                    print_EvaluationStatus_Of_DevSubset(True)
+                else:
+                    print_EvaluationStatus_Of_DevSubset(False)
+            if numRows_output_evalCsvFile_DF > 1:
+                inputEvalCsvFile_Dict = dataset_Loader.load_ground_truth(input_evalCsvFilePath)[0] 
+                occurrences = 0
+                for key in inputEvalCsvFile_Dict.keys():
+                    if do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(inputEvalCsvFile_Dict[key]['tags'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToExtractFromCanonicalDataset'], realSoundsDataset_Creator_Dict['subset_Settings']['tags_ToAvoidFromCanonicalDataset']):
+                        occurrences += 1
+                if occurrences == numRows_output_evalCsvFile_DF:
+                    print_EvaluationStatus_Of_EvalSubset(True)
+                else:
+                    print_EvaluationStatus_Of_EvalSubset(False)
+    '''
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
 
-    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile.name:
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile.name:
 
-    elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
-'''
-    
-# merge the output .csv files into one single .csv file
-if realSoundsDataset_Creator_Dict['outputDataset_Settings']['merge_DevAndEvalSplits_CsvFilesIntoOne']:
-    devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
-    evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
-    devCsvFile_DF = pandas.read_csv(devCsvFilePath)
-    evalCsvFile_DF = pandas.read_csv(evalCsvFilePath)
-    merged_df = pandas.concat([devCsvFile_DF, evalCsvFile_DF], axis = 0)
-    merged_df.to_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), str(str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('.csv'))), index=False)
-    os.remove(devCsvFilePath)
-    os.remove(evalCsvFilePath)
+        elif realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name:
+    '''
+
+    # merge the output .csv files into one single .csv file
+    if realSoundsDataset_Creator_Dict['outputDataset_Settings']['merge_DevAndEvalSplits_CsvFilesIntoOne']:
+        devCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'dev.csv')
+        evalCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), 'eval.csv')
+        devCsvFile_DF = pandas.read_csv(devCsvFilePath)
+        evalCsvFile_DF = pandas.read_csv(evalCsvFilePath)
+        merged_df = pandas.concat([devCsvFile_DF, evalCsvFile_DF], axis = 0)
+        merged_df.to_csv(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_GroundTruthCsvFiles_SubFolderName']), str(str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('.csv'))), index=False)
+        os.remove(devCsvFilePath)
+        os.remove(evalCsvFilePath)
+####################################### end if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.SOUNDATA.name:
