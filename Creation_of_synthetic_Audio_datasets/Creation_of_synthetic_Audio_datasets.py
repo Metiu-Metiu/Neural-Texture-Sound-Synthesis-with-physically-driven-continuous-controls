@@ -86,9 +86,9 @@ datasetGenerator_DescriptorDict = {
 
     'Dataset_General_Settings' : {
     
-        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Creation_of_synthetic_Audio_datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
+        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-        'number_Of_AudioFiles_ToBeGenerated' : int(100), # audio dataset size, MUST be an integer
+        'number_Of_AudioFiles_ToBeGenerated' : int(1000), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
         'distribution_Of_Values_For_Each_Synthesis_Control_Parameter' : Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name,
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
@@ -371,7 +371,7 @@ if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile
     for scpName in synthContrParam_names:
         csvFileFieldnames += [scpName + csvFileFieldNameSuffix_ScaledParamValues]
 volumeFieldName = str('volume')
-csvFileFieldnames += volumeFieldName
+csvFileFieldnames += [volumeFieldName]
 if datasetGenerator_DescriptorDict['Dataset_General_Settings']['includeInCSVFile_ParametersValues_ScaledForMaxPDRanges']:  
     csvFileFieldnames += [volumeFieldName + csvFileFieldNameSuffix_ScaledParamValues]
 # initialize audio file volume last values with random values
