@@ -1,0 +1,2 @@
+[tensorboard_plugins]
+torch_profiler = torch_tb_profiler.plugin:TorchProfilerPlugin
