@@ -29,11 +29,26 @@ configDict = {
         'nominal_AudioDurationSecs': 3.0, # float
     },
 
+    'inputTransforms_Settings': {
+        'resample' : {
+            'new_freq' : 8000
+        },
+
+        'spectrogram' : {
+            'n_fft' : 1024,
+        },
+    },
+
     'neuralNetwork_Settings': {
-        # MUST BE A TORCHAUDIO TRANSFORM, see https://pytorch.org/audio/stable/transforms.html for available transforms
-        'input_Transforms': [], # [torchaudio.transforms.Resample(orig_freq = 44100, new_freq = 8000)], #, Spectrogram(n_fft = 800)], 
         'number_Of_Epochs': 100,
         'batch_size': 1
-    },
+    }
 }
+
+# MUST BE A TORCHAUDIO TRANSFORM, see https://pytorch.org/audio/stable/transforms.html for available transforms
+configDict['neuralNetwork_Settings']['input_Transforms'] = [
+    torchaudio.transforms.Resample(
+        orig_freq = configDict['validation']['nominal_SampleRate'],
+        new_freq = configDict['inputTransforms_Settings']['resample']['new_freq'])
+        ]
 #########################################################################
