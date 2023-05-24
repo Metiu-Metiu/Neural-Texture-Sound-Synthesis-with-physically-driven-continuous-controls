@@ -2,6 +2,90 @@ import torch
 from torch import nn
 
 ######################################################################################################################################################
+class Conv_1D_DynamicNet(nn.Module):
+    def __init__(self,
+                 inputShape, # tuple representing (batch_size, channels, width), use torch.tensor.shape 
+                 numberOfFeaturesToExtract,
+                 numberOfConvLayers = 1,
+                 kernelSizeOfConvLayers = 3,
+                 strideOfConvLayers = 1,
+                 numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
+                 kernelSizeOfPoolingLayers = 2,
+                 strideOfPoolingLayers = 2,
+                 numberOfFullyConnectedLayers = 1,
+                 fullyConnectedLayers_InputSizeDecreaseFactor = 2): # divider
+        self.inputShape = inputShape
+        numberOfInputChannels = self.inputShape[1]
+        inputSignalLength = self.inputShape[2]
+        numberOfFeaturesToExtract = numberOfInputChannels * numberOfFeaturesToExtract
+        super(Conv_1D_DynamicNet, self).__init__()
+        self.conv_blocks = nn.ModuleList()
+        # Create the convolutional layers dynamically
+        for convLayer in range(numberOfConvLayers):
+            if convLayer == 0:
+                in_channels = numberOfInputChannels
+                out_channels = numberOfFeaturesToExtract
+            else:
+                in_channels = num_out_channels_of_previous_layer
+                out_channels = in_channels * numberOfFeaturesToExtract_IncremMultiplier_FromLayer1
+
+            self.conv_blocks.append(nn.Sequential(
+                nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                nn.ReLU(),
+                nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+            
+            num_out_channels_of_previous_layer = out_channels
+                
+        # Calculate the number of features after convolutional layers
+        num_features = self.CalculateInputSize_OfFirstFullyConnectedLayer()
+
+        self.fc_blocks = nn.ModuleList()
+        # Create the fully connected layers dynamically
+        for fullyConnLayer in range(numberOfFullyConnectedLayers):
+            if numberOfFullyConnectedLayers  == 1:
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, numberOfFeaturesToExtract),
+                    nn.ReLU()
+                ))
+            elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
+                num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, num_output_features),
+                    nn.ReLU()
+                ))
+                num_features = num_output_features
+            elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, numberOfFeaturesToExtract),
+                    nn.ReLU()
+                ))
+
+        # self.output_layer = nn.Linear(num_features, 1)  
+
+    def forward(self, x):
+        for conv_block in self.conv_blocks:
+            x = conv_block(x)
+        
+        x = x.view(x.size(0), -1)  # Flatten the tensor
+
+        for fc_block in self.fc_blocks:
+            x = fc_block(x)
+
+        # x = self.output_layer(x)
+        return x
+
+    def CalculateInputSize_OfFirstFullyConnectedLayer(self):
+        dummy_input = torch.zeros(self.inputShape)  # Assuming input size of (batch_size, num_channels, input_size)
+        dummy_output = dummy_input
+
+        for conv_block in self.conv_blocks:
+            dummy_output = conv_block(dummy_output)
+        
+        num_features = dummy_output.view(dummy_output.size(0), -1).shape[1]
+        return num_features
+######################################################################################################################################################
+
+######################################################################################################################################################
 class FF_NN(nn.Module):
     def __init__(self, input_shape):
         super(FF_NN, self).__init__()
@@ -84,12 +168,12 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 
         #calculate loss
         output = model(input) 
-        # print(f'Model output: {output}')
-        # print(f'Model output type: {type(output)}')
-        # print(f'Model output shape: {output.shape}')
-        # print(f'Model target: {target}')
-        # print(f'Model target type: {type(target)}')
-        # print(f'Model target shape: {target.shape}')
+        print(f'Model output: {output}')
+        print(f'Model output type: {type(output)}')
+        print(f'Model output shape: {output.shape}')
+        print(f'Model target: {target}')
+        print(f'Model target type: {type(target)}')
+        print(f'Model target shape: {target.shape}')
         loss = loss_fn(output, target)
 
         # backpropagate error and update weights

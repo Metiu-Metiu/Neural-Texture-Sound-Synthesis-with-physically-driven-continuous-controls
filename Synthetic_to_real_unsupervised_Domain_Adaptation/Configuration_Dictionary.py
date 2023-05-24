@@ -11,7 +11,7 @@ configDict = {
     'syntheticDataset_Settings': {
         # The first and last column number to consider in the .csv file containing the ground truth of interest
         # Audio file name is always column n. 0
-        'rangeOfColumnNumbers_ToConsiderInCsvFile': [2, 7],
+        'rangeOfColumnNumbers_ToConsiderInCsvFile': [1, 7],
     },
 
     'realDataset_Settings': {
@@ -31,7 +31,7 @@ configDict = {
 
     'neuralNetwork_Settings': {
         # MUST BE A TORCHAUDIO TRANSFORM, see https://pytorch.org/audio/stable/transforms.html for available transforms
-        'input_Transforms': [torchaudio.transforms.Resample(orig_freq = 44100, new_freq = 8000)], #, Spectrogram(n_fft = 800)], 
+        'input_Transforms': [], # [torchaudio.transforms.Resample(orig_freq = 44100, new_freq = 8000)], #, Spectrogram(n_fft = 800)], 
         'number_Of_Epochs': 100,
         'batch_size': 1
     },

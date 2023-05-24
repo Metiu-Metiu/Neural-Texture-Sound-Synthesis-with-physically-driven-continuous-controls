@@ -11,10 +11,16 @@ from Configuration_Dictionary import configDict
 # DATASET CLASS (extends torch.utils.data.Dataset) 
 class Dataset_Wrapper(Dataset):
     def __init__(self, audioFiles_Directory_, groundTruth_CsvFIlePath_, rangeOfColumnNumbers_ToConsiderInCsvFile_, device_, transform = None, target_transform = None):
+        # print(f'Initializing Dataset_Wrapper object.')
+        # print(f'    Audio files directory : {audioFiles_Directory_}')
+        # print(f'    Ground truth .csv file path : {groundTruth_CsvFIlePath_}')
+        # print(f'    Range of column numbers to consider in the .csv file : {rangeOfColumnNumbers_ToConsiderInCsvFile_}')   
         self.device = device_
         self.labels = pandas.read_csv(groundTruth_CsvFIlePath_)
         self.rangeOfColumnNumbers_ToConsiderInCsvFile = rangeOfColumnNumbers_ToConsiderInCsvFile_
-        self.numberOfLabels = (self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] - self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]) + 1
+        self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] += 1 # to include the last column
+        self.numberOfLabels = (self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] - self.rangeOfColumnNumbers_ToConsiderInCsvFile[0])
+        # print(f'    self.numberOfLabels : {self.numberOfLabels}')
         self.audioFiles_Directory = audioFiles_Directory_
         if transform:
             self.transforms = transform

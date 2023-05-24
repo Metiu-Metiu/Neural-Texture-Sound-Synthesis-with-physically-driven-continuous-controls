@@ -10,7 +10,7 @@ import time
 from torchsummary import summary
 
 from Dataset_Wrapper import Dataset_Wrapper
-from Neural_Networks import FF_NN, SynthesisControlParameters_Extractor_Network, train, train_single_epoch
+from Neural_Networks import Conv_1D_DynamicNet, train, train_single_epoch
 from Configuration_Dictionary import configDict
 
 if torch.cuda.is_available():
@@ -30,43 +30,29 @@ synthDataset_AudioFiles_Directory = os.path.abspath(synthDatasetGenerator_Descri
 synthDataset_GroundTruth_CsvFIlePath = os.path.join(synthDataset_AudioFiles_Directory, synthDatasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + ".csv")
 ##################################################
 
-# model = FF_NN(24000)
-# x = torch.randn(24000)
-# print(model(x).shape)
-
-# model = SynthesisControlParameters_Extractor_Network()
-# x = torch.randn(1, 1, 401, 61)
-# print(model(x).shape)
-
 synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_GroundTruth_CsvFIlePath, configDict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'], device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
 train_dataloader = DataLoader(synthDataset, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
-item = synthDataset.__getitem__(0)
-print(item[0].shape)
-print(item[1].shape)
-print(type(item))
 
-# Display image and label.
-# train_features, train_labels = next(iter(train_dataloader))
-# print(f"Feature batch shape: {train_features.size()}")
-# print(f"Labels batch shape: {train_labels.size()}")
-# img = train_features[0].squeeze()
-# label = train_labels[0]
-# plt.imshow(img, cmap="gray")
-# plt.show()
-# print(f"Label: {label}")
+inputSignalLength = 44100 * int(configDict['validation']['nominal_AudioDurationSecs'])
+# Example input tensor shape: (batch_size, channels, width)
+inputTensor = torch.randn(1, 1, inputSignalLength)
+conv_1D_Net = Conv_1D_DynamicNet(inputTensor.shape,
+                         synthDataset.numberOfLabels,
+                         numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
+                         numberOfConvLayers = 4,
+                         kernelSizeOfConvLayers = 25,
+                         strideOfConvLayers = 1,
+                         kernelSizeOfPoolingLayers = 2,
+                         strideOfPoolingLayers = 2,
+                         numberOfFullyConnectedLayers = 4,
+                         fullyConnectedLayers_InputSizeDecreaseFactor = 4).to(device)     
+print(f'Input test x shape : {inputTensor.shape}')
+print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
+print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
+summary(conv_1D_Net, inputTensor)
 
-'''
-# nn_Model = SynthesisControlParameters_Extractor_Network().to(device)     
-nn_Model = FF_NN(24000).to(device)     
+# loss_Function = nn.MSELoss()
+# optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.01)
+# train(conv_1D_Net, train_dataloader, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
 
-print(synthDataset.__getitem__(0)[0].shape)
-# print(len(synthDataset.__getitem__(0)[1]))
-# summary(nn_Model, 24000)
-
-loss_Function = nn.MSELoss()
-optimizer = torch.optim.Adam(nn_Model.parameters(), lr=0.01)
-
-train(nn_Model, train_dataloader, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
-
-torch.save(nn_Model.state_dict(), 'SynthesisControlParameters_Extractor_Network.pth')
-'''
+# torch.save(conv_1D_Net.state_dict(), 'SynthesisControlParameters_Extractor_Network.pth')
