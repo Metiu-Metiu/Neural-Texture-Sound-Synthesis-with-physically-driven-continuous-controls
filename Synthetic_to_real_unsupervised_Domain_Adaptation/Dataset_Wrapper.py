@@ -49,7 +49,7 @@ class Dataset_Wrapper(Dataset):
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
-                labels = torch.tensor(list(labels), dtype=torch.float64)
+                labels = torch.tensor(list(labels), dtype=torch.float32)
             else:
                 labels = torch.empty(self.numberOfLabels)
             if self.transforms:
