@@ -10,7 +10,7 @@ import time
 from torchsummary import summary
 
 from Dataset_Wrapper import Dataset_Wrapper
-from Neural_Networks import Conv_1D_DynamicNet, train, train_single_epoch
+from Neural_Networks import Convolutional_DynamicNet, train, train_single_epoch
 from Configuration_Dictionary import configDict
 
 if torch.cuda.is_available():
@@ -34,25 +34,28 @@ synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_G
 train_dataloader = DataLoader(synthDataset, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
 inputSignalLength = 44100 * int(configDict['validation']['nominal_AudioDurationSecs'])
-# Example input tensor shape: (batch_size, channels, width)
-inputTensor = torch.randn(1, 1, inputSignalLength)
-conv_1D_Net = Conv_1D_DynamicNet(inputTensor.shape,
-                         synthDataset.numberOfLabels,
-                         numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
-                         numberOfConvLayers = 4,
-                         kernelSizeOfConvLayers = 25,
-                         strideOfConvLayers = 1,
-                         kernelSizeOfPoolingLayers = 2,
-                         strideOfPoolingLayers = 2,
-                         numberOfFullyConnectedLayers = 4,
-                         fullyConnectedLayers_InputSizeDecreaseFactor = 4).to(device)     
+# Example input tensor shape for 1D Convolutions-based NN: (batch_size, channels, width)
+# Example input tensor shape for 2D Convolutions-based NN: (batch_size, channels, height, width)
+inputTensor = torch.randn(1, 1, 1000, 1000)
+inputTensor = synthDataset.__getitem__(0)[0].unsqueeze(0) # unsqueeze adds a dimension of size 1 at the specified position
 print(f'Input test x shape : {inputTensor.shape}')
+# expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
+conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
+                        synthDataset.numberOfLabels,
+                        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
+                        numberOfConvLayers = 4,
+                        kernelSizeOfConvLayers = 10,
+                        strideOfConvLayers = 1,
+                        kernelSizeOfPoolingLayers = 2,
+                        strideOfPoolingLayers = 2,
+                        numberOfFullyConnectedLayers = 6,
+                        fullyConnectedLayers_InputSizeDecreaseFactor = 4).to(device)     
 print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
 print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
 summary(conv_1D_Net, inputTensor)
 
-# loss_Function = nn.MSELoss()
-# optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.01)
-# train(conv_1D_Net, train_dataloader, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
+loss_Function = nn.L1Loss()
+optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)
+train(conv_1D_Net, train_dataloader, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
 
-# torch.save(conv_1D_Net.state_dict(), 'SynthesisControlParameters_Extractor_Network.pth')
+torch.save(conv_1D_Net.state_dict(), 'SynthesisControlParameters_Extractor_Network.pth')

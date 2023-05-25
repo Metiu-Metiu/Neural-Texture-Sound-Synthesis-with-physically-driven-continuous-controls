@@ -40,8 +40,8 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 100,
-        'batch_size': 1
+        'number_Of_Epochs': 30,
+        'batch_size': 8
     }
 }
 
