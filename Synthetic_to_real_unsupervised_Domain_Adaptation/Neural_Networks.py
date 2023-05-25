@@ -1,10 +1,19 @@
 import torch
 from torch import nn
+from enum import Enum
+
+class NN_Type(Enum):
+    NONE = 1
+    ONE_D_CONV = 2
+    TWO_D_CONV = 3
+
+# functional syntax
+Color = Enum('Color', ['RED', 'GREEN', 'BLUE'])
 
 ######################################################################################################################################################
-class Conv_1D_DynamicNet(nn.Module):
+class Convolutional_DynamicNet(nn.Module):
     def __init__(self,
-                 inputShape, # tuple representing (batch_size, channels, width), use torch.tensor.shape 
+                 inputShape, # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
                  numberOfFeaturesToExtract,
                  numberOfConvLayers = 1,
                  kernelSizeOfConvLayers = 3,
@@ -14,11 +23,21 @@ class Conv_1D_DynamicNet(nn.Module):
                  strideOfPoolingLayers = 2,
                  numberOfFullyConnectedLayers = 1,
                  fullyConnectedLayers_InputSizeDecreaseFactor = 2): # divider
+        if len(inputShape) == 3:
+            print(f'{type(self).__name__} constructor: Instantating a 1D Convolutional Neural Network')
+            self.NN_Type = NN_Type.ONE_D_CONV.name
+        elif len(inputShape) == 4:
+            print(f'{type(self).__name__} constructor: Instantating a 2D Convolutional Neural Network')
+            self.NN_Type = NN_Type.TWO_D_CONV.name
+        else:
+            raise Exception(f'{type(self).__name__} constructor: Input shape is not supported')
+            exit()
+
         self.inputShape = inputShape
         numberOfInputChannels = self.inputShape[1]
-        inputSignalLength = self.inputShape[2]
         numberOfFeaturesToExtract = numberOfInputChannels * numberOfFeaturesToExtract
-        super(Conv_1D_DynamicNet, self).__init__()
+
+        super(Convolutional_DynamicNet, self).__init__()
         self.conv_blocks = nn.ModuleList()
         # Create the convolutional layers dynamically
         for convLayer in range(numberOfConvLayers):
@@ -29,10 +48,18 @@ class Conv_1D_DynamicNet(nn.Module):
                 in_channels = num_out_channels_of_previous_layer
                 out_channels = in_channels * numberOfFeaturesToExtract_IncremMultiplier_FromLayer1
 
-            self.conv_blocks.append(nn.Sequential(
-                nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                nn.ReLU(),
-                nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+            if self.NN_Type == NN_Type.ONE_D_CONV.name:
+                self.conv_blocks.append(nn.Sequential(
+                    nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.ReLU(),
+                    nn.AvgPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+            elif self.NN_Type == NN_Type.TWO_D_CONV.name:
+                self.conv_blocks.append(nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.ReLU(),
+                    nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.MaxPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             
             num_out_channels_of_previous_layer = out_channels
                 
@@ -168,12 +195,12 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 
         #calculate loss
         output = model(input) 
-        print(f'Model output: {output}')
-        print(f'Model output type: {type(output)}')
-        print(f'Model output shape: {output.shape}')
-        print(f'Model target: {target}')
-        print(f'Model target type: {type(target)}')
-        print(f'Model target shape: {target.shape}')
+        # print(f'Model output: {output}')
+        # print(f'Model output type: {type(output)}')
+        # print(f'Model output shape: {output.shape}')
+        # print(f'Model target: {target}')
+        # print(f'Model target type: {type(target)}')
+        # print(f'Model target shape: {target.shape}')
         loss = loss_fn(output, target)
 
         # backpropagate error and update weights
