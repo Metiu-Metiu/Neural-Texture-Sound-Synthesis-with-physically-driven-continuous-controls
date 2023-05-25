@@ -88,7 +88,7 @@ datasetGenerator_DescriptorDict = {
     
         'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset', # Audio, .json and .csv files will be stored here
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
-        'number_Of_AudioFiles_ToBeGenerated' : int(1000), # audio dataset size, MUST be an integer
+        'number_Of_AudioFiles_ToBeGenerated' : int(10000), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
         'distribution_Of_Values_For_Each_Synthesis_Control_Parameter' : Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name,
         'includeInCSVFile_ParametersValues_ScaledForMaxPDRanges' : False, # either True or False
@@ -161,36 +161,36 @@ datasetGenerator_DescriptorDict = {
                 # HAS TO BE INTEGER AND > 0
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
-            'minDepth' : {
-                'normMinValue' : 0.2, # >= 0. and <= 1.
-                'normMaxValue' : 0.3, # >= 0. and <= 1.
-                'scaledMinValue' : 0., # min val range in Max/PD patch
-                'scaledMaxValue' : 100., # max val range in Max/PD patch
-                'chance_Generating_New_Value' : 50,
-                'chance_Retaining_Previous_File_Value' : 50,
-                # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
-                },
-            'maxDepth' : {
-                'normMinValue' : 0.5, # >= 0. and <= 1.
-                'normMaxValue' : 0.6, # >= 0. and <= 1.
-                'scaledMinValue' : 0., # min val range in Max/PD patch
-                'scaledMaxValue' : 100., # max val range in Max/PD patch
-                'chance_Generating_New_Value' : 50,
-                'chance_Retaining_Previous_File_Value' : 50,
-                 # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
-                },
-            'expDepth' : {
-                'normMinValue' : 0.4, # >= 0. and <= 1.
-                'normMaxValue' : 0.55, # >= 0. and <= 1.
-                'scaledMinValue' : 0., # min val range in Max/PD patch 
-                'scaledMaxValue' : 100., # max val range in Max/PD patch
-                'chance_Generating_New_Value' : 50,
-                'chance_Retaining_Previous_File_Value' : 50,
-                # HAS TO BE INTEGER AND > 0
-                'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
-                }
+            # 'minDepth' : {
+            #     'normMinValue' : 0.2, # >= 0. and <= 1.
+            #     'normMaxValue' : 0.3, # >= 0. and <= 1.
+            #     'scaledMinValue' : 0., # min val range in Max/PD patch
+            #     'scaledMaxValue' : 100., # max val range in Max/PD patch
+            #     'chance_Generating_New_Value' : 50,
+            #     'chance_Retaining_Previous_File_Value' : 50,
+            #     # HAS TO BE INTEGER AND > 0
+            #     'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
+            #     },
+            # 'maxDepth' : {
+            #     'normMinValue' : 0.5, # >= 0. and <= 1.
+            #     'normMaxValue' : 0.6, # >= 0. and <= 1.
+            #     'scaledMinValue' : 0., # min val range in Max/PD patch
+            #     'scaledMaxValue' : 100., # max val range in Max/PD patch
+            #     'chance_Generating_New_Value' : 50,
+            #     'chance_Retaining_Previous_File_Value' : 50,
+            #      # HAS TO BE INTEGER AND > 0
+            #     'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
+            #     },
+            # 'expDepth' : {
+            #     'normMinValue' : 0.4, # >= 0. and <= 1.
+            #     'normMaxValue' : 0.55, # >= 0. and <= 1.
+            #     'scaledMinValue' : 0., # min val range in Max/PD patch 
+            #     'scaledMaxValue' : 100., # max val range in Max/PD patch
+            #     'chance_Generating_New_Value' : 50,
+            #     'chance_Retaining_Previous_File_Value' : 50,
+            #     # HAS TO BE INTEGER AND > 0
+            #     'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
+            #     }
             }
         },
 
@@ -437,6 +437,8 @@ elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_O
     number_Of_Files_To_Be_Generated = datasetGenerator_DescriptorDict['Dataset_General_Settings']['number_Of_AudioFiles_ToBeGenerated']
 elif datasetGenerator_DescriptorDict['Dataset_General_Settings']['distribution_Of_Values_For_Each_Synthesis_Control_Parameter'] == Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION.name:
     number_Of_Files_To_Be_Generated = actualNumAudioFilesToGenerate_WithUNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTIONDistr
+
+os.makedirs(os.path.abspath(datasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path']), exist_ok=True)
 
 startTime = time.time()
 # generate audio files and save synthesis control parameters
