@@ -51,15 +51,19 @@ class Convolutional_DynamicNet(nn.Module):
             if self.NN_Type == NN_Type.ONE_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                    nn.ReLU(),
+                    # nn.ReLU(), # outputs would all be 0. with ReLU
                     nn.AvgPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
                     # nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.Dropout1d ####################################
+                    # nn.BatchNorm1d ####################################
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                    nn.ReLU(),
+                    # nn.ReLU(), # outputs would all be 0. with ReLU
                     nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
                     # nn.MaxPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.Dropout2d ####################################
+                    # nn.BatchNorm2d ####################################
             
             num_out_channels_of_previous_layer = out_channels
                 
@@ -72,22 +76,20 @@ class Convolutional_DynamicNet(nn.Module):
             if numberOfFullyConnectedLayers  == 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    nn.ReLU()
+                    # nn.ReLU() # outputs would all be 0. with ReLU
                 ))
             elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
                 num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, num_output_features),
-                    nn.ReLU()
+                    # nn.ReLU() # outputs would all be 0. with ReLU
                 ))
                 num_features = num_output_features
             elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    nn.ReLU()
+                    # nn.ReLU() # outputs would all be 0. with ReLU
                 ))
-
-        # self.output_layer = nn.Linear(num_features, 1)  
 
     def forward(self, x):
         for conv_block in self.conv_blocks:
@@ -98,7 +100,6 @@ class Convolutional_DynamicNet(nn.Module):
         for fc_block in self.fc_blocks:
             x = fc_block(x)
 
-        # x = self.output_layer(x)
         return x
 
     def CalculateInputSize_OfFirstFullyConnectedLayer(self):
@@ -110,82 +111,6 @@ class Convolutional_DynamicNet(nn.Module):
         
         num_features = dummy_output.view(dummy_output.size(0), -1).shape[1]
         return num_features
-######################################################################################################################################################
-
-######################################################################################################################################################
-class FF_NN(nn.Module):
-    def __init__(self, input_shape):
-        super(FF_NN, self).__init__()
-        self.flatten = nn.Linear(input_shape, 5)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        y = self.flatten(x)
-        y = self.relu(y)
-        return y
-######################################################################################################################################################
-
-######################################################################################################################################################
-# Neural network
-class SynthesisControlParameters_Extractor_Network(nn.Module):
-    def __init__(self):
-        super(SynthesisControlParameters_Extractor_Network, self).__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 5, kernel_size = (3,3), stride = (1,1), padding = (1,1)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size = (2,2), stride = (1,1)))
-        
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(5, 10, kernel_size = (3,3), stride = (1,1), padding = (1,1)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size = (2,2), stride = (1,1)))
-        
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(10, 20, kernel_size = (3,3), stride = (1,1), padding = (1,1)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size = (2,2), stride = (1,1)))
-        
-        self.conv4 = nn.Sequential(
-            nn.Conv2d(20, 40, kernel_size = (3,3), stride = (1,1), padding = (1,1)),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size = (2,2), stride = (1,1)))
-        
-        self.flatten = nn.Flatten()
-        '''
-        To determine the size of the inputs for the Linear layer in your network,
-        you need to know the number of output features from the preceding Conv2d layers.
-        In your case, the number of output features from the last Conv2d layer (self.conv4) is 56.
-        Since you're using nn.MaxPool2d with a kernel size of 2 after each convolutional layer,
-        the spatial dimensions (height and width) of the feature maps are reduced by a factor of 2 after each pooling operation.
-        This means that the height and width of the feature maps at the end of self.conv4 are 1/16th of the original input size.
-        Given that you have 56 output channels and the spatial dimensions are reduced by a factor of 16,
-        the total number of input features for the Linear layer can be calculated as follows:
-        '''
-        linearLayerInput_size = 905160 # 40 * int(401 / 16) * int(61 / 16)
-        self.linear = nn.Linear(linearLayerInput_size, 5)
-        self.relu = nn.ReLU()
-    
-    def forward(self, x):
-        out = self.conv1(x)
-        # print(out.shape)
-        out = self.conv2(out)
-        # print(out.shape)
-        out = self.conv3(out)
-        # print(out.shape)
-        out = self.conv4(out)
-        # print(out.shape)
-        out = self.flatten(out)
-        out = self.relu(out)
-        # print(out.shape)
-        out = out.reshape(out.shape[0], -1)
-        out = self.linear(out)
-        # print(out.shape)
-        out = self.relu(out)
-        # print(out.shape)
-        # print(type(out))
-        out = torch.tensor(out, dtype=torch.float64)
-        # out.requires_grad = True
-        return out
 ######################################################################################################################################################
 
 ###########################
@@ -209,6 +134,8 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
         loss.backward()
         optimizer.step()
 
+    # print(f'    Output of the network: {output}')
+    # print(f'    Target: {target}')
     print(f"Loss: {loss.item()}")
 
     

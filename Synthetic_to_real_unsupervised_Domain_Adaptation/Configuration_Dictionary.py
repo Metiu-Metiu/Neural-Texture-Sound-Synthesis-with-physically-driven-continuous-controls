@@ -11,7 +11,12 @@ configDict = {
     'syntheticDataset_Settings': {
         # The first and last column number to consider in the .csv file containing the ground truth of interest
         # Audio file name is always column n. 0
-        'rangeOfColumnNumbers_ToConsiderInCsvFile': [1, 7],
+        'rangeOfColumnNumbers_ToConsiderInCsvFile': [1, 4],
+        'splits' : { # they need to add up to 1.
+            'train' : 0.05,
+            'val' : 0.85,
+            'test' : 0.1
+        }
     },
 
     'realDataset_Settings': {
@@ -29,9 +34,15 @@ configDict = {
         'nominal_AudioDurationSecs': 3.0, # float
     },
 
+    'pyTorch_General_Settings': {
+        'device': torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        'dtype': torch.float32,
+        'manual_seed': 42,
+    },
+
     'inputTransforms_Settings': {
         'resample' : {
-            'new_freq' : 8000
+            'new_freq' : 16000
         },
 
         'spectrogram' : {
@@ -40,8 +51,8 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 30,
-        'batch_size': 8
+        'number_Of_Epochs': 50,
+        'batch_size': 128
     }
 }
 

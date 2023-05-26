@@ -10,7 +10,13 @@ from Configuration_Dictionary import configDict
 ######################################################################################################################################################
 # DATASET CLASS (extends torch.utils.data.Dataset) 
 class Dataset_Wrapper(Dataset):
-    def __init__(self, audioFiles_Directory_, groundTruth_CsvFIlePath_, rangeOfColumnNumbers_ToConsiderInCsvFile_, device_, transform = None, target_transform = None):
+    def __init__(self,
+                audioFiles_Directory_,
+                groundTruth_CsvFIlePath_,
+                rangeOfColumnNumbers_ToConsiderInCsvFile_, 
+                device_, 
+                transform = None,
+                target_transform = None):
         # print(f'Initializing Dataset_Wrapper object.')
         # print(f'    Audio files directory : {audioFiles_Directory_}')
         # print(f'    Ground truth .csv file path : {groundTruth_CsvFIlePath_}')
@@ -49,7 +55,7 @@ class Dataset_Wrapper(Dataset):
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
-                labels = torch.tensor(list(labels), dtype=torch.float32)
+                labels = torch.tensor(list(labels), dtype = configDict['pyTorch_General_Settings']['dtype'])
             else:
                 labels = torch.empty(self.numberOfLabels)
             if self.transforms:
