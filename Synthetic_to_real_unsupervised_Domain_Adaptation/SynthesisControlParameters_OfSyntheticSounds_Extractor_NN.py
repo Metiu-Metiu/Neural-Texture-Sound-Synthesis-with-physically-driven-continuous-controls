@@ -10,7 +10,7 @@ import time
 from torchsummary import summary
 
 from Dataset_Wrapper import Dataset_Wrapper
-from Neural_Networks import Convolutional_DynamicNet, train, train_single_epoch
+from Neural_Networks import Convolutional_DynamicNet, train, test
 from Configuration_Dictionary import configDict
 
 torch.manual_seed(configDict['pyTorch_General_Settings']['manual_seed'])
@@ -57,14 +57,29 @@ conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         strideOfConvLayers = 1,
                         kernelSizeOfPoolingLayers = 2,
                         strideOfPoolingLayers = 2,
-                        numberOfFullyConnectedLayers = 8,
+                        numberOfFullyConnectedLayers = 12,
                         fullyConnectedLayers_InputSizeDecreaseFactor = 2).to(device)     
 print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
 print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
 summary(conv_1D_Net, inputTensor)
 
-loss_Function = nn.L1Loss()
+loss_Function = nn.L1Loss(reduction='mean') # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
 optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)
-train(conv_1D_Net, synthDS_TrainDL, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
+train(conv_1D_Net, synthDS_TrainDL, synthDS_ValDL, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
 
-torch.save(conv_1D_Net.state_dict(), 'SynthesisControlParameters_Extractor_Network.pth')
+test(synthDS_TestDL, conv_1D_Net, loss_Function)
+
+# dump output files
+os.makedirs(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), exist_ok=True)
+
+torch.save(conv_1D_Net.state_dict(), os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+
+configDict['pyTorch_General_Settings']['device'] = str(configDict['pyTorch_General_Settings']['device'])
+configDict['pyTorch_General_Settings']['dtype'] = str(configDict['pyTorch_General_Settings']['dtype'])
+configDict['neuralNetwork_Settings']['input_Transforms'] = str(configDict['neuralNetwork_Settings']['input_Transforms'])
+jsonFileName = configDict['outputFilesSettings']['jSonFile_WithThisDict_Name'] + str(".json")
+jsonFilePath = os.path.join(configDict['outputFilesSettings']['outputFolder_Path'], jsonFileName)
+with open(jsonFilePath, 'w') as jsonfile:
+    json.dump(configDict, jsonfile, indent=4)
+
+print('Finished training and dumping output files.')

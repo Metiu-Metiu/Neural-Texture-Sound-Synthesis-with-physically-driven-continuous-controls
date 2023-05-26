@@ -13,8 +13,8 @@ configDict = {
         # Audio file name is always column n. 0
         'rangeOfColumnNumbers_ToConsiderInCsvFile': [1, 4],
         'splits' : { # they need to add up to 1.
-            'train' : 0.05,
-            'val' : 0.85,
+            'train' : 0.85,
+            'val' : 0.05,
             'test' : 0.1
         }
     },
@@ -42,7 +42,7 @@ configDict = {
 
     'inputTransforms_Settings': {
         'resample' : {
-            'new_freq' : 16000
+            'new_freq' : 32000
         },
 
         'spectrogram' : {
@@ -51,8 +51,14 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 50,
+        'number_Of_Epochs': 30,
         'batch_size': 128 # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+    },
+
+    'outputFilesSettings': {
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Synthetic_to_real_unsupervised_Domain_Adaptation/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May26_2023/',
+        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May26_2023',
+        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May26_2023'
     }
 }
 
