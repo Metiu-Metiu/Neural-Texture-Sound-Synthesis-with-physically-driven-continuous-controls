@@ -34,9 +34,12 @@ synthDataset_GroundTruth_CsvFIlePath = os.path.join(synthDataset_AudioFiles_Dire
 # This is to ensure that the validation and test splits are not biased towards the training split in any way (we know for sure they are expected to be different than the train split).
 synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_GroundTruth_CsvFIlePath, configDict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'], device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
 synthDS_TrainSplit, synthDS_EvalSplit, synthDS_TestSplit = torch.utils.data.random_split(synthDataset, [int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))])
+print(f'Number of samples in train split : {len(synthDS_TrainSplit)}')
+print(f'Number of samples in validation split : {len(synthDS_EvalSplit)}')
+print(f'Number of samples in test split : {len(synthDS_TestSplit)}')
 
 synthDS_TrainDL = DataLoader(synthDS_TrainSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
-synthDS_EvalDL = DataLoader(synthDS_EvalSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
+synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 synthDS_TestDL = DataLoader(synthDS_TestSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
 inputSignalLength = 44100 * int(configDict['validation']['nominal_AudioDurationSecs'])

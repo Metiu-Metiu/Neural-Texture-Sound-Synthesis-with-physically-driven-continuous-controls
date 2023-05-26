@@ -52,7 +52,7 @@ configDict = {
 
     'neuralNetwork_Settings': {
         'number_Of_Epochs': 50,
-        'batch_size': 128
+        'batch_size': 128 # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
     }
 }
 
