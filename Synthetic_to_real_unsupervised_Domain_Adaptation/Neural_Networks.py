@@ -196,6 +196,8 @@ def test(data_loader, model, loss_fn):
     mean_loss = cumulative_loss / len(data_loader)
     print(f"Mean test loss over all batches: {mean_loss}")
         
+    configDict['statistics']['mean_TestLoss_OverAllBatches'] = mean_loss
+    
     model.train()
     return loss
 ########################################

@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torchaudio.transforms import Spectrogram
 from torch import nn
 
+import datetime
 import time
 from torchsummary import summary
 
@@ -42,30 +43,42 @@ synthDS_TrainDL = DataLoader(synthDS_TrainSplit, batch_size = configDict['neural
 synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 synthDS_TestDL = DataLoader(synthDS_TestSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
-inputSignalLength = 44100 * int(configDict['validation']['nominal_AudioDurationSecs'])
+inputSignalLength = 32000 * int(configDict['validation']['nominal_AudioDurationSecs'])
 # Example input tensor shape for 1D Convolutions-based NN: (batch_size, channels, width)
 # Example input tensor shape for 2D Convolutions-based NN: (batch_size, channels, height, width)
 inputTensor = torch.randn(1, 1, 1000, 1000)
 inputTensor = synthDataset.__getitem__(0)[0].unsqueeze(0) # unsqueeze adds a dimension of size 1 at the specified position
 print(f'Input test from synthetic dataset, shape : {inputTensor.shape}')
+
+configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor.shape
+configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
+
+
 # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
 conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         synthDataset.numberOfLabels,
-                        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
-                        numberOfConvLayers = 4,
-                        kernelSizeOfConvLayers = 5,
-                        strideOfConvLayers = 1,
-                        kernelSizeOfPoolingLayers = 2,
-                        strideOfPoolingLayers = 2,
-                        numberOfFullyConnectedLayers = 12,
-                        fullyConnectedLayers_InputSizeDecreaseFactor = 2).to(device)     
+                        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract_IncremMultiplier_FromLayer1'],
+                        numberOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfConvLayers'],
+                        kernelSizeOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfConvLayers'],
+                        strideOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfConvLayers'],
+                        kernelSizeOfPoolingLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfPoolingLayers'],
+                        strideOfPoolingLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfPoolingLayers'],
+                        numberOfFullyConnectedLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers'],
+                        fullyConnectedLayers_InputSizeDecreaseFactor = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
 print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
 print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
 summary(conv_1D_Net, inputTensor)
 
 loss_Function = nn.L1Loss(reduction='mean') # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
 optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)
+
+startTime = time.time()
 train(conv_1D_Net, synthDS_TrainDL, synthDS_ValDL, loss_Function, optimizer, device, configDict['neuralNetwork_Settings']['number_Of_Epochs'])
+endTime = time.time()
+trainingTimeElapsed = round(endTime - startTime)
+trainingTimeElapsed = str(datetime.timedelta(seconds = trainingTimeElapsed))
+configDict['statistics']['dateAndTime_WhenTrainingFinished_dd/mm/YY H:M:S'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+configDict['statistics']['elapsedTime_WhileTraining'] = trainingTimeElapsed
 
 test(synthDS_TestDL, conv_1D_Net, loss_Function)
 

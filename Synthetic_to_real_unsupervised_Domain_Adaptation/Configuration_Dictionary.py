@@ -51,14 +51,30 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 30,
-        'batch_size': 128 # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+        'number_Of_Epochs': 50,
+        'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+        'arguments_For_Convolutional_DynamicNet_Constructor': {
+            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
+            'numberOfConvLayers': 4,
+            'kernelSizeOfConvLayers': 5,
+            'strideOfConvLayers': 1,
+            'kernelSizeOfPoolingLayers': 2,
+            'strideOfPoolingLayers': 2,
+            'numberOfFullyConnectedLayers': 12,
+            'fullyConnectedLayers_InputSizeDecreaseFactor': 2
+        },
     },
 
     'outputFilesSettings': {
         'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Synthetic_to_real_unsupervised_Domain_Adaptation/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May26_2023/',
         'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May26_2023',
         'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May26_2023'
+    },
+
+    'satistics': {
+        'mean_TestLoss_OverAllBatches' : None,
+        'elapsedTime_WhileTraining' : None,
+        'dateAndTime_WhenTrainingFinished_dd/mm/YY H:M:S' : None,
     }
 }
 
