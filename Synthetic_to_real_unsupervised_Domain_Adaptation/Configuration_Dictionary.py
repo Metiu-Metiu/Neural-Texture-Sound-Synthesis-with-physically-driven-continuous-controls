@@ -67,8 +67,8 @@ configDict = {
 
     'outputFilesSettings': {
         'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Synthetic_to_real_unsupervised_Domain_Adaptation/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May26_2023/',
-        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May26_2023',
-        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May26_2023'
+        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May29_2023',
+        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May29_2023'
     },
 
     'satistics': {

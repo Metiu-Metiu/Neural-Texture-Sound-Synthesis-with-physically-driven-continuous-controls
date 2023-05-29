@@ -53,7 +53,6 @@ print(f'Input test from synthetic dataset, shape : {inputTensor.shape}')
 configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor.shape
 configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
 
-
 # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
 conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         synthDataset.numberOfLabels,
