@@ -53,6 +53,7 @@ class Dataset_Wrapper(Dataset):
                 assert audioFile_Metadata.num_channels == configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
                 assert audioFile_Metadata.bits_per_sample == configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
+            audioSignal = audioSignal.to(self.device)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
                 labels = torch.tensor(list(labels), dtype = configDict['pyTorch_General_Settings']['dtype'])
