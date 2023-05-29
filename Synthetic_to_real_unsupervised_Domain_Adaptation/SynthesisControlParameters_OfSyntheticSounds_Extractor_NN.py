@@ -56,7 +56,7 @@ configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Con
 # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
 conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         synthDataset.numberOfLabels,
-                        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract_IncremMultiplier_FromLayer1'],
+                        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeaturesToExtract_IncremMultiplier_FromLayer1'],
                         numberOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfConvLayers'],
                         kernelSizeOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfConvLayers'],
                         strideOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfConvLayers'],
@@ -66,7 +66,7 @@ conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         fullyConnectedLayers_InputSizeDecreaseFactor = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
 print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
 print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
-summary(conv_1D_Net, inputTensor)
+# summary(conv_1D_Net, inputTensor.shape)
 
 loss_Function = nn.L1Loss(reduction='mean') # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
 optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)

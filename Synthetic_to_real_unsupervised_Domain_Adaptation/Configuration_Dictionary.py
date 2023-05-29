@@ -5,7 +5,7 @@ import torchaudio
 configDict = {
     'paths': {
         # Path of the .json file containing the descriptor dictionary of the synthetic dataset
-        'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
+        'synthDataset_JSonFile_Path': '/content/drive/MyDrive/Master Thesis Project/Synthetic Sounds Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
     },
 
     'syntheticDataset_Settings': {
@@ -66,7 +66,7 @@ configDict = {
     },
 
     'outputFilesSettings': {
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/repo/SMC_thesis/Synthetic_to_real_unsupervised_Domain_Adaptation/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May26_2023/',
+        'outputFolder_Path': '/content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May29_2023/',
         'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May29_2023',
         'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May29_2023'
     },
