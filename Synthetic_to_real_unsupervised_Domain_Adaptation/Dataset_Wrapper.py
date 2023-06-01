@@ -9,6 +9,7 @@ from Configuration_Dictionary import configDict
 
 ######################################################################################################################################################
 # DATASET CLASS (extends torch.utils.data.Dataset) 
+
 class Dataset_Wrapper(Dataset):
     def __init__(self,
                 audioFiles_Directory_,
@@ -17,16 +18,24 @@ class Dataset_Wrapper(Dataset):
                 device_, 
                 transform = None,
                 target_transform = None):
+        '''
+        For supervised tasks, rangeOfColumnNumbers_ToConsiderInCsvFile_ must not be None. 
+        See __getItem()__ documentation for more details.
+        '''
         # print(f'Initializing Dataset_Wrapper object.')
         # print(f'    Audio files directory : {audioFiles_Directory_}')
         # print(f'    Ground truth .csv file path : {groundTruth_CsvFIlePath_}')
         # print(f'    Range of column numbers to consider in the .csv file : {rangeOfColumnNumbers_ToConsiderInCsvFile_}')   
         self.device = device_
         self.labels = pandas.read_csv(groundTruth_CsvFIlePath_)
-        self.rangeOfColumnNumbers_ToConsiderInCsvFile = rangeOfColumnNumbers_ToConsiderInCsvFile_
-        self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] += 1 # to include the last column
-        self.numberOfLabels = (self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] - self.rangeOfColumnNumbers_ToConsiderInCsvFile[0])
-        # print(f'    self.numberOfLabels : {self.numberOfLabels}')
+        if rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None:
+            self.rangeOfColumnNumbers_ToConsiderInCsvFile = rangeOfColumnNumbers_ToConsiderInCsvFile_
+            self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] += 1 # to include the last column
+            self.numberOfLabels = (self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] - self.rangeOfColumnNumbers_ToConsiderInCsvFile[0])
+            # print(f'    self.numberOfLabels : {self.numberOfLabels}')
+        else:
+            self.rangeOfColumnNumbers_ToConsiderInCsvFile = None
+            self.numberOfLabels = None
         self.audioFiles_Directory = audioFiles_Directory_
         if transform:
             self.transforms = transform
@@ -43,6 +52,11 @@ class Dataset_Wrapper(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        '''
+        If rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None in the constructor, returns a tuple (audioFile, target) where target is a list of labels
+        Else, returns a tuple (audioFile, target) where target is the name of the audioFile
+        '''
+
         audioFile_path = os.path.join(self.audioFiles_Directory, self.labels.iloc[idx, 0])
         if os.path.exists(audioFile_path):
             assert audioFile_path.endswith(configDict['validation']['nominal_AudioFileExtension']), f"Error while loading {audioFile_path} : Audio file extension is not valid"
@@ -58,7 +72,11 @@ class Dataset_Wrapper(Dataset):
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
                 labels = torch.tensor(list(labels), dtype = configDict['pyTorch_General_Settings']['dtype'])
             else:
-                labels = torch.empty(self.numberOfLabels)
+                if self.numberOfLabels:
+                    labels = torch.empty(self.numberOfLabels)
+                else:
+                    # labels = torch.empty(0)
+                    labels = self.labels.iloc[idx, 0]
             if self.transforms:
                 for transform in self.transforms:
                     audioSignal = transform(audioSignal)
@@ -66,11 +84,15 @@ class Dataset_Wrapper(Dataset):
                 labels = self.target_transform(labels)
             # print(f'Audio signal shape : {audioSignal.shape}')
             # print(f'Labels shape : {labels.shape}')
+            # print(f'Transforms : {self.transforms}')
             return audioSignal, labels
         else:
             return torch.empty(0), torch.empty(0)
         
     def getAnnotations_ColumnsNames(self):
         # return the column names of the .csv file containing the ground truth
-        return list(self.labels.columns[self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]])
+        if self.rangeOfColumnNumbers_ToConsiderInCsvFile is not None:
+            return list(self.labels.columns[self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]])
+        else:
+            return list()
 ######################################################################################################################################################

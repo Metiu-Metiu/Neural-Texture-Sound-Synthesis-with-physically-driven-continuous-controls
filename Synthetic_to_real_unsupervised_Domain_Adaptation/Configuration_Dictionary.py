@@ -5,7 +5,10 @@ import torchaudio
 configDict = {
     'paths': {
         # Path of the .json file containing the descriptor dictionary of the synthetic dataset
-        'synthDataset_JSonFile_Path': '/content/drive/MyDrive/Master Thesis Project/Synthetic Sounds Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
+        # /content/drive/MyDrive/Master Thesis Project/Synthetic Sounds Datasets/SDT_FluidFlow_dataset
+        # '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
+        'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
+        'realDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json',
     },
 
     'syntheticDataset_Settings': {
@@ -51,7 +54,7 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 50,
+        'number_Of_Epochs': 100,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
         'arguments_For_Convolutional_DynamicNet_Constructor': {
             'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
@@ -66,12 +69,14 @@ configDict = {
     },
 
     'outputFilesSettings': {
-        'outputFolder_Path': '/content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May29_2023/',
-        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May29_2023',
-        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May29_2023'
+        # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May29_2023
+        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_May29_2023
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_May29_2023/',
+        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May26_2023',
+        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May26_2023'
     },
 
-    'satistics': {
+    'statistics': {
         'mean_TestLoss_OverAllBatches' : None,
         'elapsedTime_WhileTraining' : None,
         'dateAndTime_WhenTrainingFinished_dd/mm/YY H:M:S' : None,

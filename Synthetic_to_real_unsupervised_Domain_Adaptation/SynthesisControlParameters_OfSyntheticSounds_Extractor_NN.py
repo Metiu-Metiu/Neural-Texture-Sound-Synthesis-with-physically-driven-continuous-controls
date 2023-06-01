@@ -43,7 +43,7 @@ synthDS_TrainDL = DataLoader(synthDS_TrainSplit, batch_size = configDict['neural
 synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 synthDS_TestDL = DataLoader(synthDS_TestSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
-inputSignalLength = 32000 * int(configDict['validation']['nominal_AudioDurationSecs'])
+inputSignalLength = configDict['inputTransforms_Settings']['resample']['new_freq'] * int(configDict['validation']['nominal_AudioDurationSecs'])
 # Example input tensor shape for 1D Convolutions-based NN: (batch_size, channels, width)
 # Example input tensor shape for 2D Convolutions-based NN: (batch_size, channels, height, width)
 inputTensor = torch.randn(1, 1, 1000, 1000)
@@ -76,16 +76,23 @@ train(conv_1D_Net, synthDS_TrainDL, synthDS_ValDL, loss_Function, optimizer, dev
 endTime = time.time()
 trainingTimeElapsed = round(endTime - startTime)
 trainingTimeElapsed = str(datetime.timedelta(seconds = trainingTimeElapsed))
+print(f'Finished training.')
+
+# TODO make sure execution does not stop here because of Error KeyNotFound in configDict
 configDict['statistics']['dateAndTime_WhenTrainingFinished_dd/mm/YY H:M:S'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 configDict['statistics']['elapsedTime_WhileTraining'] = trainingTimeElapsed
 
 test(synthDS_TestDL, conv_1D_Net, loss_Function)
+print(f'Finished testing.')
 
 # dump output files
 os.makedirs(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), exist_ok=True)
 
 torch.save(conv_1D_Net.state_dict(), os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+print(f'Finished saving the model state dictionary to .pth file.')
 
+# CAREFUL HERE THIS CAN CAUSE PROBLEMS TO SCRIPTS GETTING configDict['neuralNetwork_Settings']['input_Transforms'] AFTER TO STRING CONVERSION
+# TODO: PROBABLY IT IS BETTER TO COPY configDict AT THE START OF EACH SCRIPT AND ONLY MODIFY THE COPY BEFORE DUMPING IT TO JSON FILES
 configDict['pyTorch_General_Settings']['device'] = str(configDict['pyTorch_General_Settings']['device'])
 configDict['pyTorch_General_Settings']['dtype'] = str(configDict['pyTorch_General_Settings']['dtype'])
 configDict['neuralNetwork_Settings']['input_Transforms'] = str(configDict['neuralNetwork_Settings']['input_Transforms'])

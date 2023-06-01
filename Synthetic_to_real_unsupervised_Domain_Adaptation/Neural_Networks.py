@@ -146,7 +146,8 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
     for epoch in range(number_Of_Epochs):
         print(f"Epoch {epoch+1}")
         train_single_epoch(nn_Model, train_dataloader, loss_Function, optimizer, device)
-        validate(validation_dataLoader, nn_Model, loss_Function)
+        if validation_dataLoader is not None:
+            validate(validation_dataLoader, nn_Model, loss_Function)
         print("---------------------------")
     print("Finished training")
 ########################################
@@ -200,4 +201,25 @@ def test(data_loader, model, loss_fn):
     
     model.train()
     return loss
+########################################
+
+########################################
+def perform_inference_byExtractingSynthesisControlParameters(data_loader, model, syntheticDataset_LabelsNames):
+    # returns a dictionary like {'audioFileName.wav' : {synthContrParam1 : value1, synthContrParam2 : value2, ...}}
+    # where 'audioFileName.wav' are the keys and [labels] are the values
+
+    labelled_AudioFilesDict = dict()
+    model.eval()
+    with torch.no_grad():
+        for x, target in data_loader:
+            x = x.to(configDict['pyTorch_General_Settings']['device'])            
+
+            batch_output = model(x)
+
+            for audioFileIt, output in enumerate(batch_output.numpy()):
+                labelled_AudioFilesDict[target[audioFileIt]] = dict()
+                for labelIt, label in enumerate(output):
+                    labelled_AudioFilesDict[target[audioFileIt]][syntheticDataset_LabelsNames[labelIt]] = float(label) # if not coverted to float or string, it will be a numpy.float32 or numpy.int64, which is not JSON serializable
+    model.train()
+    return labelled_AudioFilesDict
 ########################################
