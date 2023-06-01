@@ -36,7 +36,7 @@ realSoundsDataset_Creator_Dict = {
     },
 
     'subset_Settings': {
-        'createSubset': False, # either True or False
+        'createSubset': True, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Gurgling', 'Steam', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name, 
@@ -172,10 +172,10 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                                             exit()
                                         essentia.MonoWriter(filename = output_file_path)(segment)
                                         csvReaderRow_FileNameModified = csvReaderRow
-                                        csvReaderRow_FileNameModified[0] = str(outpuFileName)
+                                        csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
                                         csvWriter.writerow(csvReaderRow_FileNameModified)
-                                        outputCsvFile_Dict[outpuFileName] = dict()
-                                        outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[canonicalFileName_NoExt]
+                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
+                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
                                         segmentNum += 1
                                         subsetDataset_Augm_Size += 1
                             else: # NO SEGMENTATION ##########################################################################################################
@@ -213,10 +213,10 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                                         exit()
                                     essentia.MonoWriter(filename = output_file_path)(segment)
                                     csvReaderRow_FileNameModified = csvReaderRow
-                                    csvReaderRow_FileNameModified[0] = str(outpuFileName)
+                                    csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
                                     csvWriter.writerow(csvReaderRow_FileNameModified)
-                                    outputCsvFile_Dict[outpuFileName] = dict()
-                                    outputCsvFile_Dict[outpuFileName] = inputCsvFile_Dict[canonicalFileName_NoExt]
+                                    outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
+                                    outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
                                     segmentNum += 1
                                     subsetDataset_Augm_Size += 1
                         csvReaderRowCounter += 1
