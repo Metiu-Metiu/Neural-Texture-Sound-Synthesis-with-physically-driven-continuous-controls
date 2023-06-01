@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from enum import Enum
+import os # to save .pth file as a checkpoint
 
 from Configuration_Dictionary import configDict
 
@@ -143,17 +144,41 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 
 ########################################
 def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, optimizer, device, number_Of_Epochs):
+    lastBest_ModelStateDict = dict()
+    lastBest_OptimizerStateDict = dict()
+
     for epoch in range(number_Of_Epochs):
         print(f"Epoch {epoch+1}")
         train_single_epoch(nn_Model, train_dataloader, loss_Function, optimizer, device)
         if validation_dataLoader is not None:
-            validate(validation_dataLoader, nn_Model, loss_Function)
+            validationLoss = validate(validation_dataLoader, nn_Model, loss_Function)
+            if epoch == 0:
+                lastBestValidationLoss = validationLoss
+            else:
+                if validationLoss > lastBestValidationLoss: # validation loss is increasing
+                    print("Saving checkpoint dictionary with model...")
+                    torch.save(checkpoint, os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+                    print("Checkpoint dictionary with model saved")
+                    # if early stopping is enabled
+                    print("Early stopping")
+                    break
+                else:
+                    lastBestValidationLoss = validationLoss # validation loss is decreasing
+                    checkpoint = {
+                        'epoch_n' : epoch + 1,
+                        'validation_loss' : lastBestValidationLoss,
+                        'model_state_dict' : nn_Model.state_dict(),
+                        'optimizer_state_dict' : optimizer.state_dict(),
+                    }
+
         print("---------------------------")
     print("Finished training")
 ########################################
 
 ########################################
 def validate(data_loader, model, loss_fn):
+    # THE VALIDATION DATA LOADER SHOULD BE CREATED WITH drop_last = True
+    # SO THAT ALL BATCHES HAVE THE SAME SIZE AND THE VALIDATION LOSS CAN BE MORE EASILY BE CALCULATED
     cumulative_loss = 0.0
     model.eval()
     with torch.no_grad():
@@ -167,10 +192,10 @@ def validate(data_loader, model, loss_fn):
     
     print(f"Validation loss of last batch: {loss.item()}")
     mean_loss = cumulative_loss / len(data_loader)
-    print(f"Mean validation loss of whole epoch: {mean_loss}")
+    print(f"Validation loss of whole epoch (all batches have the same size): {mean_loss}")
         
     model.train()
-    return loss
+    return mean_loss
 ########################################
 
 ########################################
