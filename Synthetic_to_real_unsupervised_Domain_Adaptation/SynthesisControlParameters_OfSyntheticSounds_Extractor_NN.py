@@ -45,15 +45,9 @@ synthDS_TrainDL = DataLoader(synthDS_TrainSplit, batch_size = configDict['neural
 synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True, drop_last = True)
 synthDS_TestDL = DataLoader(synthDS_TestSplit, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
-inputSignalLength = configDict['inputTransforms_Settings']['resample']['new_freq'] * int(configDict['validation']['nominal_AudioDurationSecs'])
 # Example input tensor shape for 1D Convolutions-based NN: (batch_size, channels, width)
 # Example input tensor shape for 2D Convolutions-based NN: (batch_size, channels, height, width)
-inputTensor = torch.randn(1, 1, 1000, 1000)
-inputTensor = synthDataset.__getitem__(0)[0].unsqueeze(0) # unsqueeze adds a dimension of size 1 at the specified position
-print(f'Input test from synthetic dataset, shape : {inputTensor.shape}')
-
-configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor.shape
-configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
+inputTensor = synthDataset.__getitem__(0)[0].unsqueeze(0) # unsqueeze adds a dimension of size 1 at the specified position (in this case simulates the batch size dimension)
 
 # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
 conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
@@ -66,9 +60,10 @@ conv_1D_Net = Convolutional_DynamicNet(inputTensor.shape,
                         strideOfPoolingLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfPoolingLayers'],
                         numberOfFullyConnectedLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers'],
                         fullyConnectedLayers_InputSizeDecreaseFactor = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
-print(f'Model output shape : {conv_1D_Net(inputTensor).shape}')
-print(f'Labels data from dataset, shape : {synthDataset.__getitem__(0)[1].shape}')
-# summary(conv_1D_Net, inputTensor.shape)
+summary(conv_1D_Net, synthDataset.__getitem__(0)[0].shape)
+
+configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor.shape
+configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
 
 loss_Function = nn.L1Loss(reduction='mean') # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
 optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)

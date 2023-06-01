@@ -160,8 +160,9 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
                         hasCheckpointFile_AlreadyBeenSaved = True
                         print("Checkpoint dictionary with model saved")
                     if configDict['neuralNetwork_Settings']['early_Stopping'] == True:
-                        print("Early stopping")
-                        break
+                        if epoch + 1 >= configDict['neuralNetwork_Settings']['minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive']:
+                            print("Early stopping")
+                            break
                 else:
                     lastBestValidationLoss = validationLoss # validation loss is decreasing
                     checkpoint = {

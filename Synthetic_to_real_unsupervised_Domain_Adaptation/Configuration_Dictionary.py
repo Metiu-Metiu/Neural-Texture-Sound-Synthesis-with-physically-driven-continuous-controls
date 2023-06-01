@@ -67,6 +67,7 @@ configDict = {
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
         'early_Stopping': True,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 75,
     },
 
     'outputFilesSettings': {
