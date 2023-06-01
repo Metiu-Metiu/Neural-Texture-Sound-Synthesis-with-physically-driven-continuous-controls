@@ -5,9 +5,11 @@ import torchaudio
 configDict = {
     'paths': {
         # Path of the .json file containing the descriptor dictionary of the synthetic dataset
-        # /content/drive/MyDrive/Master Thesis Project/Synthetic Sounds Datasets/SDT_FluidFlow_dataset
+        # /content/drive/MyDrive/Master Thesis Project/Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
         # '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
         'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
+        # /content/drive/MyDrive/Master Thesis Project/Datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
+        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
         'realDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json',
     },
 
@@ -57,7 +59,7 @@ configDict = {
         'number_Of_Epochs': 100,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
         'arguments_For_Convolutional_DynamicNet_Constructor': {
-            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
+            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 2,
             'numberOfConvLayers': 4,
             'kernelSizeOfConvLayers': 5,
             'strideOfConvLayers': 1,
@@ -67,15 +69,15 @@ configDict = {
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 75,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 50,
     },
 
     'outputFilesSettings': {
-        # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May29_2023
-        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_May29_2023
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_June1_2023/',
-        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_June1_2023',
-        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_June1_2023'
+        # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
+        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June1_2023
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June1_2023/',
+        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June1_2023',
+        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June1_2023'
     },
 
     'statistics': {
@@ -89,6 +91,9 @@ configDict = {
 configDict['neuralNetwork_Settings']['input_Transforms'] = [
     torchaudio.transforms.Resample(
         orig_freq = configDict['validation']['nominal_SampleRate'],
-        new_freq = configDict['inputTransforms_Settings']['resample']['new_freq'])
+        new_freq = configDict['inputTransforms_Settings']['resample']['new_freq']),
+    torchaudio.transforms.MelSpectrogram(
+        n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
+        sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
         ]
 #########################################################################
