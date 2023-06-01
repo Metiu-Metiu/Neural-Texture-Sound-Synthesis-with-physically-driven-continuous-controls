@@ -144,9 +144,7 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 
 ########################################
 def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, optimizer, device, number_Of_Epochs):
-    lastBest_ModelStateDict = dict()
-    lastBest_OptimizerStateDict = dict()
-
+    hasCheckpointFile_AlreadyBeenSaved = False
     for epoch in range(number_Of_Epochs):
         print(f"Epoch {epoch+1}")
         train_single_epoch(nn_Model, train_dataloader, loss_Function, optimizer, device)
@@ -156,12 +154,14 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
                 lastBestValidationLoss = validationLoss
             else:
                 if validationLoss > lastBestValidationLoss: # validation loss is increasing
-                    print("Saving checkpoint dictionary with model...")
-                    torch.save(checkpoint, os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
-                    print("Checkpoint dictionary with model saved")
-                    # if early stopping is enabled
-                    print("Early stopping")
-                    break
+                    if hasCheckpointFile_AlreadyBeenSaved == False:
+                        print("Saving checkpoint dictionary with model...")
+                        torch.save(checkpoint, os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+                        hasCheckpointFile_AlreadyBeenSaved = True
+                        print("Checkpoint dictionary with model saved")
+                    if configDict['neuralNetwork_Settings']['early_Stopping'] == True:
+                        print("Early stopping")
+                        break
                 else:
                     lastBestValidationLoss = validationLoss # validation loss is decreasing
                     checkpoint = {
@@ -170,6 +170,7 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
                         'model_state_dict' : nn_Model.state_dict(),
                         'optimizer_state_dict' : optimizer.state_dict(),
                     }
+                    hasCheckpointFile_AlreadyBeenSaved == False
 
         print("---------------------------")
     print("Finished training")

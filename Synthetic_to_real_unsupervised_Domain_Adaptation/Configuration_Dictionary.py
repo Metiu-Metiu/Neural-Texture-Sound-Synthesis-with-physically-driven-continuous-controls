@@ -66,14 +66,15 @@ configDict = {
             'numberOfFullyConnectedLayers': 12,
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
+        'early_Stopping': True,
     },
 
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/1D_CNN_SynthParamExtractor_May29_2023
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_May29_2023
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_May29_2023/',
-        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_May26_2023',
-        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_May26_2023'
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_June1_2023/',
+        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_June1_2023',
+        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_June1_2023'
     },
 
     'statistics': {
