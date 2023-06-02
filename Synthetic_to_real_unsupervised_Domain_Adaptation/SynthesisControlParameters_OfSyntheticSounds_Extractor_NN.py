@@ -67,7 +67,7 @@ summary(conv_1D_Net, synthDataset.__getitem__(0)[0].shape)
 config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor_WithBatchDim.shape
 config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
 
-loss_Function = nn.L1Loss(reduction='mean') # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
+loss_Function = nn.L1Loss(reduction = config_Dict['neuralNetwork_Settings']['loss']['reduction']) # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
 optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr=0.001)
 
 startTime = time.time()

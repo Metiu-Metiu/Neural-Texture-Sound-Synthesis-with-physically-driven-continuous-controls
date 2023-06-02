@@ -58,7 +58,7 @@ configDict = {
 
     'neuralNetwork_Settings': {
         'number_Of_Epochs': 100,
-        'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+        'batch_size': 1, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
         'arguments_For_Convolutional_DynamicNet_Constructor': {
             'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 2,
             'numberOfConvLayers': 4,
@@ -66,11 +66,15 @@ configDict = {
             'strideOfConvLayers': 1,
             'kernelSizeOfPoolingLayers': 2,
             'strideOfPoolingLayers': 2,
-            'numberOfFullyConnectedLayers': 6,
+            'numberOfFullyConnectedLayers': 7,
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 50,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 10,
+        'loss' : {
+            # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
+            'reduction' : 'mean'
+        }
     },
 
     'outputFilesSettings': {

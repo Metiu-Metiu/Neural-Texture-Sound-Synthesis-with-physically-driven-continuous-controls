@@ -69,8 +69,9 @@ print(f'Model output shape : {conv_1D_Net_PreTrained(inputTensor).shape}')
 # summary(conv_1D_Net_PreTrained, inputTensor.shape)
 
 pre_trained_model_path_parentFold = os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path'])
-pre_trained_model_path = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('.pth')))
-conv_1D_Net_PreTrained.load_state_dict(torch.load(pre_trained_model_path, map_location = torch.device(device)))
+checkpointFile_path = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('.pth')))
+checkpointDictionary = torch.load(checkpointFile_path, map_location = torch.device(device))
+conv_1D_Net_PreTrained.load_state_dict(checkpointDictionary['model_state_dict'])
 print(conv_1D_Net_PreTrained)
 
 syntheticDataset_LabelsNames = list(syntheticDataset_LabelsNames)
@@ -83,15 +84,15 @@ else:
 
 # COMMENT/UNCOMMENT THE FOLLOWING LINES FOR ACTUAL INFERENCE ON REAL DATASET
 # dump .json and .csv file with labelled audio files to pre_trained_model_path_parentFold
-labelled_AudioFilesDict_StrIdentifier = str('_ExtractedAudioFilesLabels')
-labelled_AudioFilesDict_JSON_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + str('.json')))
-labelled_AudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + str('.csv')))
-# test create .csv file with labelled synthetic audio files
-with open(labelled_AudioFilesDict_JSON_FilePath, 'w') as labelled_AudioFilesDict_JSON_File:
-    json.dump(labelled_AudioFilesDict, labelled_AudioFilesDict_JSON_File, indent = 4)
+# labelled_AudioFilesDict_StrIdentifier = str('_ExtractedAudioFilesLabels')
+# labelled_AudioFilesDict_JSON_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + str('.json')))
+# labelled_AudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + str('.csv')))
+# # test create .csv file with labelled synthetic audio files
+# with open(labelled_AudioFilesDict_JSON_FilePath, 'w') as labelled_AudioFilesDict_JSON_File:
+#     json.dump(labelled_AudioFilesDict, labelled_AudioFilesDict_JSON_File, indent = 4)
 
 # COMMENT/UNCOMMENT THIS LINE FOR TESTS ON SYNTHETIC DATASET
-# labelled_SynthAudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('_ExtractedAudioFilesLabels') + str('_Synth') + str('.csv')))
+labelled_SynthAudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('_ExtractedAudioFilesLabels') + str('_Synth') + str('.csv')))
 
 csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
 csvFileFieldnames += syntheticDataset_LabelsNames # add synthesis control parameters names to the .csv file header
@@ -104,7 +105,7 @@ for key in labelled_AudioFilesDict.keys():
         thisFileDict[syntheticDataset_LabelsNames[i]] = labelled_AudioFilesDict[key][syntheticDataset_LabelsNames[i]]
     labelled_AudioFiles_ListOfDict.append(thisFileDict)
 # CHANGE THIS LINE FOR TESTS ON SYNTHETIC DATASET OR ACTUAL INFERENCE ON REAL DATASET
-with open(labelled_AudioFilesDict_CSV_FilePath, 'w') as csvfile: 
+with open(labelled_SynthAudioFilesDict_CSV_FilePath, 'w') as csvfile: 
     writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames, dialect='excel')
     writer.writeheader()
     for dict in labelled_AudioFiles_ListOfDict:

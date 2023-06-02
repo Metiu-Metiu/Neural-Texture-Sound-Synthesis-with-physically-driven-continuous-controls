@@ -58,11 +58,10 @@ class Convolutional_DynamicNet(nn.Module):
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                    # nn.ReLU(), # outputs would all be 0. with ReLU
+                    nn.Dropout2d(0.4),
+                    nn.BatchNorm2d(out_channels),
+                    nn.ReLU(),
                     nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
-                    # nn.MaxPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
-                    # nn.Dropout2d ####################################
-                    # nn.BatchNorm2d ####################################
             
             num_out_channels_of_previous_layer = out_channels
                 
@@ -75,19 +74,19 @@ class Convolutional_DynamicNet(nn.Module):
             if numberOfFullyConnectedLayers  == 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    # nn.ReLU() # outputs would all be 0. with ReLU
+                    nn.ReLU()
                 ))
             elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
                 num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, num_output_features),
-                    # nn.ReLU() # outputs would all be 0. with ReLU
+                    nn.ReLU()
                 ))
                 num_features = num_output_features
             elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    # nn.ReLU() # outputs would all be 0. with ReLU
+                    nn.ReLU()
                 ))
 
     def forward(self, x):
@@ -145,6 +144,7 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 ########################################
 def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, optimizer, device, number_Of_Epochs):
     hasCheckpointFile_AlreadyBeenSaved = False
+    checkpoint = {}
     for epoch in range(number_Of_Epochs):
         print(f"Epoch {epoch+1}")
         train_single_epoch(nn_Model, train_dataloader, loss_Function, optimizer, device)
