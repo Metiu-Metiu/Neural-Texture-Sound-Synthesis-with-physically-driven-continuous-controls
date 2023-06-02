@@ -171,7 +171,7 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
                         'model_state_dict' : nn_Model.state_dict(),
                         'optimizer_state_dict' : optimizer.state_dict(),
                     }
-                    hasCheckpointFile_AlreadyBeenSaved == False
+                    hasCheckpointFile_AlreadyBeenSaved = False
 
         print("---------------------------")
     print("Finished training")
