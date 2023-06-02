@@ -47,11 +47,12 @@ configDict = {
 
     'inputTransforms_Settings': {
         'resample' : {
-            'new_freq' : 32000
+            'new_freq' : 16000
         },
 
         'spectrogram' : {
             'n_fft' : 1024,
+            'n_mels' : 64,
         },
     },
 
@@ -89,11 +90,12 @@ configDict = {
 
 # MUST BE A TORCHAUDIO TRANSFORM, see https://pytorch.org/audio/stable/transforms.html for available transforms
 configDict['neuralNetwork_Settings']['input_Transforms'] = [
-    # torchaudio.transforms.Resample(
-    #     orig_freq = configDict['validation']['nominal_SampleRate'],
-    #     new_freq = configDict['inputTransforms_Settings']['resample']['new_freq']),
+    torchaudio.transforms.Resample(
+        orig_freq = configDict['validation']['nominal_SampleRate'],
+        new_freq = configDict['inputTransforms_Settings']['resample']['new_freq']),
     torchaudio.transforms.MelSpectrogram(
         # n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
-        sample_rate = configDict['validation']['nominal_SampleRate'])
+        n_mels = configDict['inputTransforms_Settings']['spectrogram']['n_mels'], # with 128 -default-: UserWarning: At least one mel filterbank has all zero values. The value for `n_mels` (128) may be set to
+        sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
         ]
 #########################################################################
