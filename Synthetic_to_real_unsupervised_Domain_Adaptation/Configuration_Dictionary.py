@@ -57,8 +57,10 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 100,
-        'batch_size': 1, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+        'number_Of_Epochs': 200,
+        'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
+        'learning_Rate': 0.001,
+        'dropout_Probability': 0.4,
         'arguments_For_Convolutional_DynamicNet_Constructor': {
             'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 2,
             'numberOfConvLayers': 4,
@@ -70,19 +72,22 @@ configDict = {
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 10,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 150,
         'loss' : {
             # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
             'reduction' : 'mean'
+        },
+        'activation_Function' : {
+            'negative_slope' : 0.2
         }
     },
 
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
-        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June1_2023
-        'outputFolder_Path': '/content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023',
-        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June1_2023',
-        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June1_2023'
+        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June7_2023
+        'outputFolder_Path': '/content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June7_2023',
+        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June7_2023',
+        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June7_2023'
     },
 
     'statistics': {

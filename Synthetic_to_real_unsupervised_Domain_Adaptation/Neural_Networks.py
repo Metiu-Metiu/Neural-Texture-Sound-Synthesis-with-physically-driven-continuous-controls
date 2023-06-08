@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from enum import Enum
 import os # to save .pth file as a checkpoint
-
+import time
 from Configuration_Dictionary import configDict
 
 class NN_Type(Enum):
@@ -51,18 +51,22 @@ class Convolutional_DynamicNet(nn.Module):
             if self.NN_Type == NN_Type.ONE_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                    nn.Dropout1d(0.4),
+                    nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
                     nn.BatchNorm1d(out_channels), 
-                    nn.ReLU(), # outputs would all be 0. with ReLU and no normalization layer
                     nn.AvgPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
-                    nn.Dropout2d(0.4),
+                    nn.Dropout2d(configDict['neuralNetwork_Settings']['dropout_Probability']),
                     nn.BatchNorm2d(out_channels),
-                    nn.ReLU(),
                     nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             
+            if convLayer == (numberOfConvLayers - 1):
+                # Wit ReLU (not leaky), dead neurons would be a problem and the model would not learn
+                # With LeakyReLU after each conv or fc layer, also dead neurons would be a problem
+                # 1-only LeakyReLU after the last conv layer is the best option, as 1-only LeaklyReLU after the fc layers would also be a problem
+                self.conv_blocks.append(nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']))
+
             num_out_channels_of_previous_layer = out_channels
                 
         # Calculate the number of features after convolutional layers
@@ -74,19 +78,16 @@ class Convolutional_DynamicNet(nn.Module):
             if numberOfFullyConnectedLayers  == 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    nn.ReLU()
                 ))
             elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
                 num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, num_output_features),
-                    nn.ReLU()
                 ))
                 num_features = num_output_features
             elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
-                    nn.ReLU()
                 ))
 
     def forward(self, x):
@@ -113,25 +114,26 @@ class Convolutional_DynamicNet(nn.Module):
 
 ########################################
 def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
+    # size = len(dataloader.dataset)
+
     cumulative_loss = 0.0
     batch_number = 1
     for input, target in data_loader:
         input, target = input.to(device), target.to(device)
 
-        # print(f"Batch number {batch_number}")
-
         output = model(input)
         loss = loss_fn(output, target)
-        # print(f'    Model output: {output}')
+
+        # backpropagate error and update weights. https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html 
+        loss.backward() # Backpropagate the prediction loss. PyTorch deposits the gradients of the loss w.r.t. each parameter.
+        optimizer.step() # adjust the parameters by the gradients collected in the backward pass
+        optimizer.zero_grad() # reset the gradients of model parameters. Gradients by default add up; to prevent double-counting, we explicitly zero them at each iteration.
+
+        print(f'Batch number: {batch_number}')
         # print(f'    Target: {target}')
-
-        # backpropagate error and update weights
-        optimizer.zero_grad()
-        # loss.requires_grad = True
-        loss.backward()
-        optimizer.step()
-
-        # print(f"    Train loss at batch number {batch_number} : {loss.item()}")
+        # print(f'    Model output: {output}')
+        print(f'    Loss: {loss.item()}')
+        # time.sleep(20)
 
         cumulative_loss += loss.item()
         batch_number += 1
@@ -217,9 +219,9 @@ def test(data_loader, model, loss_fn):
             output = model(x)
             loss = loss_fn(output, target)
             cumulative_loss += loss.item()
+            print(f'    Output of the network: {output}')
+            print(f'    Target: {target}')
             print(f"Batch test loss: {loss.item()}")
-            # print(f'    Output of the network: {output}')
-            # print(f'    Target: {target}')
     
     mean_loss = cumulative_loss / len(data_loader)
     print(f"Mean test loss over all batches: {mean_loss}")
