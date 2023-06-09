@@ -6,3 +6,4 @@ pandas==2.0.1
 torch-tb-profiler==0.4.1
 matplotlib==3.7.1
 torchsummary==1.4.5
+librosa==0.10.0.post2
