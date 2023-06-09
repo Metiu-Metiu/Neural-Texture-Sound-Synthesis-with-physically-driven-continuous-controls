@@ -132,6 +132,10 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
         print(f'Batch number: {batch_number}')
         # print(f'    Target: {target}')
         # print(f'    Model output: {output}')
+        if batch_number == 1:
+            print(f'        Sample 1: Model output: {output[0]}')
+            print(f'        Sample 1:       Target: {target[0]}')
+            print(f'        Sample 1:         Loss: {loss_fn(output[0], target[0])}')
         print(f'    Loss: {loss.item()}')
         # time.sleep(20)
 

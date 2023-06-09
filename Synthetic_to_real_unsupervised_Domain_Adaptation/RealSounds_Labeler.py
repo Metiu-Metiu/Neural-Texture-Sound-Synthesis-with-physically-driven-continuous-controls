@@ -33,8 +33,8 @@ realDataset_DL = DataLoader(realDataset, batch_size = configDict['neuralNetwork_
 
 # test inference with synthetic data (only eval split for speeding up the inference process)
 synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, None, device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
-_, synthDataset_Small, _ = torch.utils.data.random_split(synthDataset, [int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))])
-synthDataset_DL = DataLoader(synthDataset_Small, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = False)
+synthDataset_Train, synthDataset_Valid, synthDataset_Test = torch.utils.data.random_split(synthDataset, [int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))])
+synthDataset_DL = DataLoader(synthDataset_Train, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = False)
 
 
 inputSignalLength = configDict['inputTransforms_Settings']['resample']['new_freq'] * int(configDict['validation']['nominal_AudioDurationSecs'])
