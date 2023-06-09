@@ -24,3 +24,5 @@ Commands used:
 - pip3 install torch_tb_profiler (https://pytorch.org/blog/introducing-pytorch-profiler-the-new-and-improved-performance-tool/)
 
 - pip install matplotlib (https://matplotlib.org/)
+  
+- pip3 install librosa
