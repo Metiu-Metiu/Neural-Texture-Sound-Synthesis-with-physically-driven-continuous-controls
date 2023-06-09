@@ -3,7 +3,8 @@ import torchaudio
 from torch.utils.data.dataset import Dataset
 import pandas 
 import os
-import json
+import matplotlib.pyplot as plt
+import librosa
 
 from Configuration_Dictionary import configDict
 
@@ -56,6 +57,7 @@ class Dataset_Wrapper(Dataset):
         If rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None in the constructor, returns a tuple (audioFile, target) where target is a list of labels
         Else, returns a tuple (audioFile, target) where target is the name of the audioFile
         '''
+        verbose = False
 
         audioFile_path = os.path.join(self.audioFiles_Directory, self.labels.iloc[idx, 0])
         if os.path.exists(audioFile_path):
@@ -67,6 +69,8 @@ class Dataset_Wrapper(Dataset):
                 assert audioFile_Metadata.num_channels == configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
                 assert audioFile_Metadata.bits_per_sample == configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
+            if verbose:
+                plot_waveform(audioSignal, sample_rate = configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             audioSignal = audioSignal.to(self.device)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
@@ -78,8 +82,13 @@ class Dataset_Wrapper(Dataset):
                     # labels = torch.empty(0)
                     labels = self.labels.iloc[idx, 0]
             if self.transforms:
-                for transform in self.transforms:
+                for trans_Num, transform in enumerate(self.transforms):
                     audioSignal = transform(audioSignal)
+                    if verbose:
+                        if trans_Num == 0:
+                            plot_waveform(audioSignal, sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'], title = self.labels.iloc[idx, 0])
+                        elif trans_Num == 1:
+                            plot_spectrogram(audioSignal[0], title = self.labels.iloc[idx, 0])
             if self.target_transform and labels:
                 labels = self.target_transform(labels)
             # print(f'Audio signal shape : {audioSignal.shape}')
@@ -95,4 +104,42 @@ class Dataset_Wrapper(Dataset):
             return list(self.labels.columns[self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]])
         else:
             return list()
+######################################################################################################################################################
+
+# UTILS
+######################################################################################################################################################
+def plot_waveform(waveform, sample_rate, title = "waveform"):
+    waveform = waveform.numpy()
+
+    num_channels, num_frames = waveform.shape
+    time_axis = torch.arange(0, num_frames) / sample_rate
+
+    figure, axes = plt.subplots(num_channels, 1)
+    if num_channels == 1:
+        axes = [axes]
+    for c in range(num_channels):
+        axes[c].plot(time_axis, waveform[c], linewidth=1)
+        axes[c].grid(True)
+        if num_channels > 1:
+            axes[c].set_ylabel(f"Channel {c+1}")
+    figure.suptitle(str(title + ' sampled at ' +  str(sample_rate) + ' Hz'))
+    plt.show(block = True)
+
+def plot_spectrogram(specgram, title=None, ylabel="freq_bin"):
+    fig, axs = plt.subplots(1, 1)
+    axs.set_title(title or "Spectrogram (db)")
+    axs.set_ylabel(ylabel)
+    axs.set_xlabel("frame")
+    im = axs.imshow(librosa.power_to_db(specgram), origin="lower", aspect="auto")
+    fig.colorbar(im, ax=axs)
+    plt.show(block = True)
+
+
+def plot_fbank(fbank, title=None):
+    fig, axs = plt.subplots(1, 1)
+    axs.set_title(title or "Filter bank")
+    axs.imshow(fbank, aspect="auto")
+    axs.set_ylabel("frequency bin")
+    axs.set_xlabel("mel bin")
+    plt.show(block = True)
 ######################################################################################################################################################
