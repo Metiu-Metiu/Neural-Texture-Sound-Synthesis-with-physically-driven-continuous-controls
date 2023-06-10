@@ -69,6 +69,7 @@ class Dataset_Wrapper(Dataset):
                 assert audioFile_Metadata.num_channels == configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
                 assert audioFile_Metadata.bits_per_sample == configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
+            audioSignal = audioSignal / audioSignal.abs().max() # normalize
             if verbose:
                 plot_waveform(audioSignal, sample_rate = configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             audioSignal = audioSignal.to(self.device)
