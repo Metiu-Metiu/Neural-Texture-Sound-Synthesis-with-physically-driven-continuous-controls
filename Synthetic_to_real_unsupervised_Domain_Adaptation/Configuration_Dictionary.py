@@ -7,10 +7,10 @@ configDict = {
         # Path of the .json file containing the descriptor dictionary of the synthetic dataset
         # /content/drive/MyDrive/Master Thesis Project/Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
         # '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
-        'synthDataset_JSonFile_Path': '/content/drive/MyDrive/Master Thesis Project/Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json',
+        'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset_1sec/SDT_FluidFlow.json',
         # /content/drive/MyDrive/Master Thesis Project/Datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
-        'realDataset_JSonFile_Path': '/content/drive/MyDrive/Master Thesis Project/Datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json',
+        'realDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Datasets/FSD50K_Water_Stream_subset_1sec/FSD50K_Water_Stream_subset_1sec_creatorDescriptorDict.json',
     },
 
     'syntheticDataset_Settings': {
@@ -36,7 +36,7 @@ configDict = {
         'nominal_NumOfAudioChannels': 1, # int
         'nominal_AudioFileExtension': '.wav', # string
         'nominal_BitQuantization': 16, # int
-        'nominal_AudioDurationSecs': 3.0, # float
+        'nominal_AudioDurationSecs': 1.0, # float
     },
 
     'pyTorch_General_Settings': {
@@ -52,27 +52,27 @@ configDict = {
 
         'spectrogram' : {
             'n_fft' : 1024,
-            'n_mels' : 64,
+            'n_mels' : 56,
         },
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 200,
+        'number_Of_Epochs': 75,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
-        'learning_Rate': 0.001,
+        'learning_Rate': 0.001, # 0.0005
         'dropout_Probability': 0.4,
         'arguments_For_Convolutional_DynamicNet_Constructor': {
-            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 2,
-            'numberOfConvLayers': 4,
+            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
+            'numberOfConvLayers': 5,
             'kernelSizeOfConvLayers': 3,
             'strideOfConvLayers': 1,
             'kernelSizeOfPoolingLayers': 2,
             'strideOfPoolingLayers': 2,
-            'numberOfFullyConnectedLayers': 7,
+            'numberOfFullyConnectedLayers': 2,
             'fullyConnectedLayers_InputSizeDecreaseFactor': 2
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 150,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 50,
         'loss' : {
             # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
             'reduction' : 'mean'
@@ -84,10 +84,10 @@ configDict = {
 
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
-        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June7_2023
-        'outputFolder_Path': '/content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June7_2023',
-        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June7_2023',
-        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June7_2023'
+        # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023',
+        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June9_2023',
+        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June9_2023'
     },
 
     'statistics': {
@@ -102,9 +102,10 @@ configDict['neuralNetwork_Settings']['input_Transforms'] = [
     torchaudio.transforms.Resample(
         orig_freq = configDict['validation']['nominal_SampleRate'],
         new_freq = configDict['inputTransforms_Settings']['resample']['new_freq']),
-    torchaudio.transforms.MelSpectrogram(
-        # n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
-        n_mels = configDict['inputTransforms_Settings']['spectrogram']['n_mels'], # with 128 -default-: UserWarning: At least one mel filterbank has all zero values. The value for `n_mels` (128) may be set to
-        sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
+    # torchaudio.transforms.MelSpectrogram(
+    #     # n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
+    #     normalized = True,
+    #     n_mels = configDict['inputTransforms_Settings']['spectrogram']['n_mels'], # with 128 -default-: UserWarning: At least one mel filterbank has all zero values. The value for `n_mels` (128) may be set to
+    #     sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
         ]
 #########################################################################

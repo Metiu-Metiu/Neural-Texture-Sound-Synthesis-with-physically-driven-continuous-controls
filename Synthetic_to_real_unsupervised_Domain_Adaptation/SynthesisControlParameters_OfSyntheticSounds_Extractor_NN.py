@@ -68,7 +68,7 @@ config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Co
 config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
 
 loss_Function = nn.L1Loss(reduction = config_Dict['neuralNetwork_Settings']['loss']['reduction']) # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html#torch.nn.L1Loss (reduction -mean or sum- is applied over the batch size)
-optimizer = torch.optim.SGD(conv_1D_Net.parameters(), lr = config_Dict['neuralNetwork_Settings']['learning_Rate'])
+optimizer = torch.optim.Adam(conv_1D_Net.parameters(), lr = config_Dict['neuralNetwork_Settings']['learning_Rate'])
 
 startTime = time.time()
 train(conv_1D_Net, synthDS_TrainDL, synthDS_ValDL, loss_Function, optimizer, device, config_Dict['neuralNetwork_Settings']['number_Of_Epochs'])

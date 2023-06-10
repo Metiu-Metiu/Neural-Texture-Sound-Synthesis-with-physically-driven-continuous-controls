@@ -32,7 +32,7 @@ realSoundsDataset_Creator_Dict = {
 
     'canonicalDatasetAugmentation_Settings': {
         'segment_AudioClips': True, # either True or False
-        'segments_Length_Secs': float(3.0), # seconds,
+        'segments_Length_Secs': float(1.0), # seconds,
     },
 
     'subset_Settings': {
@@ -44,7 +44,7 @@ realSoundsDataset_Creator_Dict = {
 
     'outputDataset_Settings': {
         'outputDataset_ParentFolder': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets',
-        'outputDataset_FolderName': 'FSD50K_Water_Stream_subset', # also name of the .json file with this dictionary
+        'outputDataset_FolderName': 'FSD50K_Water_Stream_subset_1sec', # also name of the .json file with this dictionary
         'outputDataset_DevSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName, '' not to put the dev split in a subfolder
         'outputDataset_EvalSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the dev split in a subfolder
         'outputDataset_GroundTruthCsvFiles_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the .csv files in a subfolder

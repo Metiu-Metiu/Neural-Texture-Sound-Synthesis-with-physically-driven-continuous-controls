@@ -51,50 +51,58 @@ class Convolutional_DynamicNet(nn.Module):
             if self.NN_Type == NN_Type.ONE_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
                     nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
                     nn.BatchNorm1d(out_channels), 
                     nn.AvgPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
                     nn.Dropout2d(configDict['neuralNetwork_Settings']['dropout_Probability']),
                     nn.BatchNorm2d(out_channels),
                     nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
-            
-            if convLayer == (numberOfConvLayers - 1):
-                # Wit ReLU (not leaky), dead neurons would be a problem and the model would not learn
-                # With LeakyReLU after each conv or fc layer, also dead neurons would be a problem
-                # 1-only LeakyReLU after the last conv layer is the best option, as 1-only LeaklyReLU after the fc layers would also be a problem
-                self.conv_blocks.append(nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']))
 
             num_out_channels_of_previous_layer = out_channels
                 
+        self.flattenLayer = nn.Flatten()
         # Calculate the number of features after convolutional layers
         num_features = self.CalculateInputSize_OfFirstFullyConnectedLayer()
 
         self.fc_blocks = nn.ModuleList()
         # Create the fully connected layers dynamically
-        for fullyConnLayer in range(numberOfFullyConnectedLayers):
-            if numberOfFullyConnectedLayers  == 1:
-                self.fc_blocks.append(nn.Sequential(
-                    nn.Linear(num_features, numberOfFeaturesToExtract),
+        # for fullyConnLayer in range(numberOfFullyConnectedLayers):
+        #     if numberOfFullyConnectedLayers == 1:
+        #         self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(num_features, numberOfFeaturesToExtract),
+        #         ))
+        #     elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
+        #         num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
+        #         self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(num_features, num_output_features),
+        #         ))
+        #         num_features = num_output_features
+        #     elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
+        #         self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(num_features, numberOfFeaturesToExtract),
+        #         ))
+
+        # fixed architecture for fc layers (2 layers num_features -> 100, 100 -> numberOfFeaturesToExtract)
+        self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, 100),
+                    # nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
                 ))
-            elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
-                num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
-                self.fc_blocks.append(nn.Sequential(
-                    nn.Linear(num_features, num_output_features),
-                ))
-                num_features = num_output_features
-            elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
-                self.fc_blocks.append(nn.Sequential(
-                    nn.Linear(num_features, numberOfFeaturesToExtract),
+        self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(100, numberOfFeaturesToExtract),
+                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
                 ))
 
     def forward(self, x):
         for conv_block in self.conv_blocks:
             x = conv_block(x)
         
-        x = x.view(x.size(0), -1)  # Flatten the tensor
+        x = self.flattenLayer(x)
+        # x = x.view(x.size(0), -1)  # Flatten the tensor
 
         for fc_block in self.fc_blocks:
             x = fc_block(x)
@@ -107,8 +115,11 @@ class Convolutional_DynamicNet(nn.Module):
 
         for conv_block in self.conv_blocks:
             dummy_output = conv_block(dummy_output)
+
+        dummy_output = self.flattenLayer(dummy_output)
+        num_features = dummy_output.shape[1]
         
-        num_features = dummy_output.view(dummy_output.size(0), -1).shape[1]
+        # num_features = dummy_output.view(dummy_output.size(0), -1).shape[1]
         return num_features
 ########################################
 
@@ -132,10 +143,16 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
         print(f'Batch number: {batch_number}')
         # print(f'    Target: {target}')
         # print(f'    Model output: {output}')
-        if batch_number == 1:
-            print(f'        Sample 1: Model output: {output[0]}')
-            print(f'        Sample 1:       Target: {target[0]}')
-            print(f'        Sample 1:         Loss: {loss_fn(output[0], target[0])}')
+        # if batch_number == 1:
+        #     print(f'        Sample 1: Model output: {output[0]}')
+        #     print(f'        Sample 1:       Target: {target[0]}')
+        #     print(f'        Sample 1:         Loss: {loss_fn(output[0], target[0])}')
+
+        print(f'        Sample 1:       Target: {target}')
+        print(f'        Sample 1: Model output: {output}')
+        print(f'        Sample 1: Model input: {input}')
+        print(f'        Sample 1:         Loss: {loss_fn(output, target)}')
+
         print(f'    Loss: {loss.item()}')
         # time.sleep(20)
 
