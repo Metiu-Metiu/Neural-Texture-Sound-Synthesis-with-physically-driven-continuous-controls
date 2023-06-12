@@ -38,13 +38,20 @@ synthDataset_GroundTruth_CsvFIlePath = os.path.join(synthDataset_AudioFiles_Dire
 # train, validation and test splits are made out of it, rather than creating a new synthetic dataset for each split.
 # This is to ensure that the validation and test splits are not biased towards the training split in any way (we know for sure they are expected to be different than the train split).
 synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_GroundTruth_CsvFIlePath, config_Dict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'], device, transform = config_Dict['neuralNetwork_Settings']['input_Transforms'])
-synthDS_TrainSplit, synthDS_EvalSplit, synthDS_TestSplit = torch.utils.data.random_split(synthDataset, [int(config_Dict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset)), int(config_Dict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset)), int(config_Dict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))])
+
+numSamplesTrainSet = int(config_Dict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset))
+numSamplesValidationSet = int(config_Dict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset))
+numSamplesTestSet = int(config_Dict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))
+if (numSamplesTrainSet + numSamplesValidationSet + numSamplesTestSet) < len(synthDataset):
+    numSamplesTrainSet += len(synthDataset) - (numSamplesTrainSet + numSamplesValidationSet + numSamplesTestSet)
+
+synthDS_TrainSplit, synthDS_EvalSplit, synthDS_TestSplit = torch.utils.data.random_split(synthDataset, [numSamplesTrainSet, numSamplesValidationSet, numSamplesTestSet])
 print(f'Number of samples in train split : {len(synthDS_TrainSplit)}')
 print(f'Number of samples in validation split : {len(synthDS_EvalSplit)}')
 print(f'Number of samples in test split : {len(synthDS_TestSplit)}')
 
 synthDS_TrainDL = DataLoader(synthDS_TrainSplit, batch_size = config_Dict['neuralNetwork_Settings']['batch_size'], shuffle = True)
-synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = config_Dict['neuralNetwork_Settings']['batch_size'], shuffle = True, drop_last = True)
+synthDS_ValDL = DataLoader(synthDS_EvalSplit, batch_size = config_Dict['neuralNetwork_Settings']['batch_size'], shuffle = True) # drop_last = True (can not drop last batch if number of samples in val dataset is smaller than batch size)
 synthDS_TestDL = DataLoader(synthDS_TestSplit, batch_size = config_Dict['neuralNetwork_Settings']['batch_size'], shuffle = True)
 
 # Example input tensor shape for 1D Convolutions-based NN: (batch_size, channels, width)
@@ -63,6 +70,12 @@ conv_1D_Net = Convolutional_DynamicNet(inputTensor_WithBatchDim.shape,
                         numberOfFullyConnectedLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers'],
                         fullyConnectedLayers_InputSizeDecreaseFactor = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
 summary(conv_1D_Net, synthDataset.__getitem__(0)[0].shape)
+
+userInput = ''
+while userInput != 'y' and userInput != 'n':
+    userInput = input(f'Are you ok with this Neural Network Architecture ? y = yes, n = abort program')
+if userInput == 'n':
+    exit()
 
 config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'] = inputTensor_WithBatchDim.shape
 config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'] = synthDataset.numberOfLabels
