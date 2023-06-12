@@ -7,7 +7,7 @@ configDict = {
         # Path of the .json file containing the descriptor dictionary of the synthetic dataset
         # /content/drive/MyDrive/Master Thesis Project/Datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
         # '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset/SDT_FluidFlow.json
-        'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset_1sec/SDT_FluidFlow.json',
+        'synthDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Datasets/SDT_FluidFlow_dataset_10000_1sec/SDT_FluidFlow.json',
         # /content/drive/MyDrive/Master Thesis Project/Datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K_Water_Stream_subset/FSD50K_Water_Stream_subset_creatorDescriptorDict.json
         'realDataset_JSonFile_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Datasets/FSD50K_Water_Stream_subset_1sec/FSD50K_Water_Stream_subset_1sec_creatorDescriptorDict.json',
@@ -47,7 +47,7 @@ configDict = {
 
     'inputTransforms_Settings': {
         'resample' : {
-            'new_freq' : 16000
+            'new_freq' : 32000
         },
 
         'spectrogram' : {
@@ -57,37 +57,37 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 75,
+        'number_Of_Epochs': 250,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
         'learning_Rate': 0.001, # 0.0005
         'dropout_Probability': 0.4,
         'arguments_For_Convolutional_DynamicNet_Constructor': {
             'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
-            'numberOfConvLayers': 5,
-            'kernelSizeOfConvLayers': 3,
+            'numberOfConvLayers': 3,
+            'kernelSizeOfConvLayers': 7,
             'strideOfConvLayers': 1,
             'kernelSizeOfPoolingLayers': 2,
             'strideOfPoolingLayers': 2,
-            'numberOfFullyConnectedLayers': 2,
-            'fullyConnectedLayers_InputSizeDecreaseFactor': 2
+            'numberOfFullyConnectedLayers': 3,
+            'fullyConnectedLayers_InputSizeDecreaseFactor': 10
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 50,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 250,
         'loss' : {
             # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
             'reduction' : 'mean'
         },
         'activation_Function' : {
-            'negative_slope' : 0.2
+            'negative_slope' : 0.9
         }
     },
 
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023',
-        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June9_2023',
-        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June9_2023'
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels',
+        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels',
+        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels'
     },
 
     'statistics': {

@@ -33,7 +33,16 @@ realDataset_DL = DataLoader(realDataset, batch_size = configDict['neuralNetwork_
 
 # test inference with synthetic data (only eval split for speeding up the inference process)
 synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, None, device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
-synthDataset_Train, synthDataset_Valid, synthDataset_Test = torch.utils.data.random_split(synthDataset, [int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset)), int(configDict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))])
+
+numSamplesTrainSet = int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset))
+numSamplesValidationSet = int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset))
+numSamplesTestSet = int(configDict['syntheticDataset_Settings']['splits']['test'] * len(synthDataset))
+if (numSamplesTrainSet + numSamplesValidationSet + numSamplesTestSet) < len(synthDataset):
+    numSamplesTrainSet += len(synthDataset) - (numSamplesTrainSet + numSamplesValidationSet + numSamplesTestSet)
+
+synthDS_TrainSplit, synthDS_EvalSplit, synthDS_TestSplit = torch.utils.data.random_split(synthDataset, [numSamplesTrainSet, numSamplesValidationSet, numSamplesTestSet])
+
+synthDataset_Train, synthDataset_Valid, synthDataset_Test = torch.utils.data.random_split(synthDataset, [numSamplesTrainSet, numSamplesValidationSet, numSamplesTestSet])
 synthDataset_DL = DataLoader(synthDataset_Train, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = False)
 
 

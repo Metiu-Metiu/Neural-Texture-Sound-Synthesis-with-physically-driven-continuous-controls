@@ -51,17 +51,19 @@ class Convolutional_DynamicNet(nn.Module):
             if self.NN_Type == NN_Type.ONE_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    # nn.ReLU(),
                     nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-                    nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
-                    nn.BatchNorm1d(out_channels), 
-                    nn.AvgPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+                    # nn.BatchNorm1d(out_channels), 
+                    nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    # nn.ReLU(),
                     nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-                    nn.Dropout2d(configDict['neuralNetwork_Settings']['dropout_Probability']),
-                    nn.BatchNorm2d(out_channels),
-                    nn.AvgPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
+                    # nn.Dropout2d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+                    # nn.BatchNorm2d(out_channels),
+                    nn.MaxPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
 
             num_out_channels_of_previous_layer = out_channels
                 
@@ -71,31 +73,40 @@ class Convolutional_DynamicNet(nn.Module):
 
         self.fc_blocks = nn.ModuleList()
         # Create the fully connected layers dynamically
-        # for fullyConnLayer in range(numberOfFullyConnectedLayers):
-        #     if numberOfFullyConnectedLayers == 1:
-        #         self.fc_blocks.append(nn.Sequential(
-        #             nn.Linear(num_features, numberOfFeaturesToExtract),
-        #         ))
-        #     elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
-        #         num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
-        #         self.fc_blocks.append(nn.Sequential(
-        #             nn.Linear(num_features, num_output_features),
-        #         ))
-        #         num_features = num_output_features
-        #     elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
-        #         self.fc_blocks.append(nn.Sequential(
-        #             nn.Linear(num_features, numberOfFeaturesToExtract),
-        #         ))
+        for fullyConnLayer in range(numberOfFullyConnectedLayers):
+            if numberOfFullyConnectedLayers == 1:
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, numberOfFeaturesToExtract),
+                ))
+            elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
+                num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, num_output_features),
+                ))
+                num_features = num_output_features
+            elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
+                self.fc_blocks.append(nn.Sequential(
+                    nn.Linear(num_features, numberOfFeaturesToExtract),
+                ))
 
         # fixed architecture for fc layers (2 layers num_features -> 100, 100 -> numberOfFeaturesToExtract)
-        self.fc_blocks.append(nn.Sequential(
-                    nn.Linear(num_features, 100),
-                    # nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
-                ))
-        self.fc_blocks.append(nn.Sequential(
-                    nn.Linear(100, numberOfFeaturesToExtract),
-                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
-                ))
+        # self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(num_features, 6000),
+        #             # nn.ReLU(),
+        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
+        #             # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+        #         ))
+        # self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(6000, 100),
+        #             # nn.ReLU(),
+        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
+        #             # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+        #         ))
+        # self.fc_blocks.append(nn.Sequential(
+        #             nn.Linear(100, numberOfFeaturesToExtract),
+        #             # nn.ReLU(),
+        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
+        #         ))
 
     def forward(self, x):
         for conv_block in self.conv_blocks:
@@ -141,20 +152,12 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
         optimizer.zero_grad() # reset the gradients of model parameters. Gradients by default add up; to prevent double-counting, we explicitly zero them at each iteration.
 
         print(f'Batch number: {batch_number}')
-        # print(f'    Target: {target}')
-        # print(f'    Model output: {output}')
-        # if batch_number == 1:
-        #     print(f'        Sample 1: Model output: {output[0]}')
-        #     print(f'        Sample 1:       Target: {target[0]}')
-        #     print(f'        Sample 1:         Loss: {loss_fn(output[0], target[0])}')
-
-        print(f'        Sample 1:       Target: {target}')
-        print(f'        Sample 1: Model output: {output}')
-        print(f'        Sample 1: Model input: {input}')
-        print(f'        Sample 1:         Loss: {loss_fn(output, target)}')
+        if batch_number == 1:
+            print(f'        Sample 1: Model output: {output[0]}')
+            print(f'        Sample 1:       Target: {target[0]}')
+            print(f'        Sample 1:         Loss: {loss_fn(output[0], target[0])}')
 
         print(f'    Loss: {loss.item()}')
-        # time.sleep(20)
 
         cumulative_loss += loss.item()
         batch_number += 1
