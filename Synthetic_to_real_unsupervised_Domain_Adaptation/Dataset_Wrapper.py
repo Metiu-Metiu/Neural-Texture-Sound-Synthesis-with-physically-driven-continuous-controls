@@ -69,10 +69,17 @@ class Dataset_Wrapper(Dataset):
                 assert audioFile_Metadata.num_channels == configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
                 assert audioFile_Metadata.bits_per_sample == configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
-            audioSignal = audioSignal / audioSignal.abs().max() # normalize
-            if verbose:
-                plot_waveform(audioSignal, sample_rate = configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
-            audioSignal = audioSignal.to(self.device)
+            audioSignal_Abs = torch.abs(audioSignal)
+            audioSignal_Max = torch.max(audioSignal_Abs)
+            if audioSignal_Max == 0.:
+                print(f'ERROR : {self.labels.iloc[idx, 0]} waveform is all 0-valued')
+                exit()
+                audioSignal_Norm = torch.zeros(audioSignal.shape)
+            else:
+                audioSignal_Norm = torch.div(audioSignal, audioSignal_Max) # normalize audio waveform between -1. and 1.
+            # if verbose:
+            #     plot_waveform(audioSignal_Norm, sample_rate = configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
+            audioSignal_Norm = audioSignal_Norm.to(self.device)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
                 labels = torch.tensor(list(labels), dtype = configDict['pyTorch_General_Settings']['dtype'])
@@ -84,18 +91,18 @@ class Dataset_Wrapper(Dataset):
                     labels = self.labels.iloc[idx, 0]
             if self.transforms:
                 for trans_Num, transform in enumerate(self.transforms):
-                    audioSignal = transform(audioSignal)
+                    audioSignal_Norm = transform(audioSignal_Norm)
                     if verbose:
                         if trans_Num == 0:
-                            plot_waveform(audioSignal, sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'], title = self.labels.iloc[idx, 0])
+                            plot_waveform(audioSignal_Norm, sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'], title = self.labels.iloc[idx, 0])
                         elif trans_Num == 1:
-                            plot_spectrogram(audioSignal[0], title = self.labels.iloc[idx, 0])
+                            plot_spectrogram(audioSignal_Norm[0], title = self.labels.iloc[idx, 0])
             if self.target_transform and labels:
                 labels = self.target_transform(labels)
-            # print(f'Audio signal shape : {audioSignal.shape}')
+            # print(f'Audio signal shape : {audioSignal_Norm.shape}')
             # print(f'Labels shape : {labels.shape}')
             # print(f'Transforms : {self.transforms}')
-            return audioSignal, labels
+            return audioSignal_Norm, labels
         else:
             return torch.empty(0), torch.empty(0)
         
