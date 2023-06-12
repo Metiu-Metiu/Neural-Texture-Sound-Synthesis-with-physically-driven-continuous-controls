@@ -86,7 +86,7 @@ datasetGenerator_DescriptorDict = {
 
     'Dataset_General_Settings' : {
     
-        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset_1sec', # Audio, .json and .csv files will be stored here
+        'absolute_Path' : '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/SDT_FluidFlow_dataset_10000_1sec', # Audio, .json and .csv files will be stored here
         'audio_Files_Extension' : '.wav', # if you change this, also change the object 'prepend writewave' in Max_8_OSC_receiver.maxpat
         'number_Of_AudioFiles_ToBeGenerated' : int(10000), # audio dataset size, MUST be an integer
         'random_Seed' : 0, # for reproducibility
@@ -103,8 +103,8 @@ datasetGenerator_DescriptorDict = {
         'file_Names_Prefix' : 'SDT_FluidFlow', # increasing numbers will be appended (1, 2, ..., up to 'number_Of_AudioFiles_ToBeGenerated')
         
         'volume' : {
-            'normalizedRandomRange_Min' : 0.09, # float, min value for generating random volume, normalized between 0. and 1.
-            'normalizedRandomRange_Max' : 0.65, # float, max value for generating random volume, normalized between 0. and 1.
+            'normalizedRandomRange_Min' : 0.5, # float, min value for generating random volume, normalized between 0. and 1.
+            'normalizedRandomRange_Max' : 0.75, # float, max value for generating random volume, normalized between 0. and 1.
             'chance_Generating_New_Volume' : 100, # int, chances of generating new volume values at each file, cumulative to 100
             'chance_Retaining_Previous_File_Volume' : 0, # int, chances of not generating new volume values at each file, cumulative to 100
             'maxPDScaledRanges_Min' : 0., # min value expected in the Max/PD patch for volume control
@@ -122,7 +122,7 @@ datasetGenerator_DescriptorDict = {
         'Synthesis_Control_Parameters' : {
     
             'avgRate' : {
-                'normMinValue' : 0.05, # >= 0. and <= 1.
+                'normMinValue' : 0.2, # >= 0. and <= 1.
                 'normMaxValue' : 0.75, # >= 0. and <= 1.
                 'scaledMinValue' : 0., # min val range in Max/PD patch
                 'scaledMaxValue' : 100., # max val range in Max/PD patch
@@ -133,7 +133,7 @@ datasetGenerator_DescriptorDict = {
                 },
             'minRadius' : {
                 'normMinValue' : 0.1, # >= 0. and <= 1.
-                'normMaxValue' : 0.4, # >= 0. and <= 1.
+                'normMaxValue' : 0.5, # >= 0. and <= 1.
                 'scaledMinValue' : 0., # min val range in Max/PD patch
                 'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
@@ -142,8 +142,8 @@ datasetGenerator_DescriptorDict = {
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'maxRadius' : {
-                'normMinValue' : 0.4, # >= 0. and <= 1.
-                'normMaxValue' : 0.7, # >= 0. and <= 1.
+                'normMinValue' : 0.5, # >= 0. and <= 1.
+                'normMaxValue' : 0.8, # >= 0. and <= 1.
                 'scaledMinValue' : 0., # min val range in Max/PD patch
                 'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
@@ -152,8 +152,8 @@ datasetGenerator_DescriptorDict = {
                 'number_Of_Minimum_Unique_SynthContrParam_Values' : 1 # only for Distribution_Of_Values_For_Each_Synthesis_Control_Parameter.UNIFORM_CONTROLLABLE_VARIANCE_LINEARLY_SPACED_VALUES_UNIFORM_JOINT_DISTRIBUTION
                 },
             'expRadius' : {
-                'normMinValue' : 0.3, # >= 0. and <= 1.
-                'normMaxValue' : 0.6, # >= 0. and <= 1.
+                'normMinValue' : 0.2, # >= 0. and <= 1.
+                'normMaxValue' : 0.8, # >= 0. and <= 1.
                 'scaledMinValue' : 0., # min val range in Max/PD patch
                 'scaledMaxValue' : 100., # max val range in Max/PD patch
                 'chance_Generating_New_Value' : 50,
