@@ -5,8 +5,7 @@ import pandas
 import os
 import matplotlib.pyplot as plt
 import librosa
-
-from Configuration_Dictionary import configDict
+import random
 
 ######################################################################################################################################################
 # DATASET CLASS (extends torch.utils.data.Dataset) 
@@ -16,9 +15,11 @@ class Dataset_Wrapper(Dataset):
                 audioFiles_Directory_,
                 groundTruth_CsvFIlePath_,
                 rangeOfColumnNumbers_ToConsiderInCsvFile_, 
+                configDict,
                 device_, 
                 transform = None,
-                target_transform = None):
+                target_transform = None,
+                applyNoise = False):
         '''
         For supervised tasks, rangeOfColumnNumbers_ToConsiderInCsvFile_ must not be None. 
         See __getItem()__ documentation for more details.
@@ -27,6 +28,8 @@ class Dataset_Wrapper(Dataset):
         # print(f'    Audio files directory : {audioFiles_Directory_}')
         # print(f'    Ground truth .csv file path : {groundTruth_CsvFIlePath_}')
         # print(f'    Range of column numbers to consider in the .csv file : {rangeOfColumnNumbers_ToConsiderInCsvFile_}')   
+        self.configDict = configDict
+        self.applyNoise = applyNoise
         self.device = device_
         self.labels = pandas.read_csv(groundTruth_CsvFIlePath_)
         if rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None:
@@ -61,13 +64,13 @@ class Dataset_Wrapper(Dataset):
 
         audioFile_path = os.path.join(self.audioFiles_Directory, self.labels.iloc[idx, 0])
         if os.path.exists(audioFile_path):
-            assert audioFile_path.endswith(configDict['validation']['nominal_AudioFileExtension']), f"Error while loading {audioFile_path} : Audio file extension is not valid"
-            if configDict['validation']['validate_AudioDatasets']:
+            assert audioFile_path.endswith(self.configDict['validation']['nominal_AudioFileExtension']), f"Error while loading {audioFile_path} : Audio file extension is not valid"
+            if self.configDict['validation']['validate_AudioDatasets']:
                 audioFile_Metadata = torchaudio.info(audioFile_path)
-                assert audioFile_Metadata.sample_rate == configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Sample rate is not valid"
-                assert audioFile_Metadata.num_frames == configDict['validation']['nominal_AudioDurationSecs'] * configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Audio duration is not valid"
-                assert audioFile_Metadata.num_channels == configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
-                assert audioFile_Metadata.bits_per_sample == configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
+                assert audioFile_Metadata.sample_rate == self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Sample rate is not valid"
+                assert audioFile_Metadata.num_frames == self.configDict['validation']['nominal_AudioDurationSecs'] * self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Audio duration is not valid"
+                assert audioFile_Metadata.num_channels == self.configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
+                assert audioFile_Metadata.bits_per_sample == self.configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
             audioSignal_Abs = torch.abs(audioSignal)
             audioSignal_Max = torch.max(audioSignal_Abs)
@@ -77,12 +80,19 @@ class Dataset_Wrapper(Dataset):
                 audioSignal_Norm = torch.zeros(audioSignal.shape)
             else:
                 audioSignal_Norm = torch.div(audioSignal, audioSignal_Max) # normalize audio waveform between -1. and 1.
-            # if verbose:
-            #     plot_waveform(audioSignal_Norm, sample_rate = configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
+            if verbose:
+                plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
+            if self.applyNoise:
+                audioSignal_Norm = add_noise(audioSignal_Norm, sample_rate, 0.5, self.configDict['inputTransforms_Settings']['addNoise']['minimum_LowPassFilter_FreqThreshold'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['maximum_LowPassFilter_FreqThreshold'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['minimumNoiseAmount'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['maximumNoiseAmount'])
+            if verbose:
+                plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             audioSignal_Norm = audioSignal_Norm.to(self.device)
             if self.rangeOfColumnNumbers_ToConsiderInCsvFile:
                 labels = self.labels.iloc[idx, self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]].to_numpy()
-                labels = torch.tensor(list(labels), dtype = configDict['pyTorch_General_Settings']['dtype'])
+                labels = torch.tensor(list(labels), dtype = self.configDict['pyTorch_General_Settings']['dtype'])
             else:
                 if self.numberOfLabels:
                     labels = torch.empty(self.numberOfLabels)
@@ -94,7 +104,7 @@ class Dataset_Wrapper(Dataset):
                     audioSignal_Norm = transform(audioSignal_Norm)
                     if verbose:
                         if trans_Num == 0:
-                            plot_waveform(audioSignal_Norm, sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'], title = self.labels.iloc[idx, 0])
+                            plot_waveform(audioSignal_Norm, sample_rate = self.configDict['inputTransforms_Settings']['resample']['new_freq'], title = self.labels.iloc[idx, 0])
                         elif trans_Num == 1:
                             plot_spectrogram(audioSignal_Norm[0], title = self.labels.iloc[idx, 0])
             if self.target_transform and labels:
@@ -150,4 +160,38 @@ def plot_fbank(fbank, title=None):
     axs.set_ylabel("frequency bin")
     axs.set_xlabel("mel bin")
     plt.show(block = True)
+
+def add_noise(audio_waveform,
+                in_sample_rate,
+                noise_factor, 
+                minimum_LowPassFilter_FreqThreshold,
+                maximum_LowPassFilter_FreqThreshold,
+                minimumNoiseAmount,
+                maximumNoiseAmount):
+
+    specrogramTransform = torchaudio.transforms.Spectrogram(n_fft=1024, power=2)
+
+    noise = torch.randn_like(audio_waveform)
+    noise_abs = torch.abs(noise)
+    noise_max = torch.max(noise_abs)
+    noise_norm = torch.div(noise, noise_max) # normalize audio waveform between -1. and 1.
+
+    # Define effects
+    threshold = torch.randint(minimum_LowPassFilter_FreqThreshold, maximum_LowPassFilter_FreqThreshold, (1,))
+    print(str(int(threshold)))
+    effects = [
+        ["lowpass", str(int(threshold))],  # apply single-pole lowpass filter
+    ]
+    filteredNoise, filteredNoiseSampRate = torchaudio.sox_effects.apply_effects_tensor(noise_norm, in_sample_rate, effects)
+
+    plot_spectrogram(specrogramTransform(audio_waveform[0]), title = 'Original audio')
+    noisy_waveform = audio_waveform + (filteredNoise * random.uniform(minimumNoiseAmount, maximumNoiseAmount))
+    plot_spectrogram(specrogramTransform(noisy_waveform[0]), title = 'Audio with noise')
+
+    # re-normalize
+    noisy_waveform_abs = torch.abs(noisy_waveform)
+    noisy_waveform_max = torch.max(noisy_waveform_abs)
+    noisy_waveform_norm = torch.div(noisy_waveform, noisy_waveform_max) # normalize audio waveform between -1. and 1.
+
+    return noisy_waveform_norm
 ######################################################################################################################################################

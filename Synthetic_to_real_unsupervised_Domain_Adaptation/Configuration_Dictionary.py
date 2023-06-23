@@ -50,6 +50,14 @@ configDict = {
             'new_freq' : 32000
         },
 
+        'addNoise' : {
+            'perform' : True, # either True or False
+            'minimum_LowPassFilter_FreqThreshold' : 3000,
+            'maximum_LowPassFilter_FreqThreshold' : 12000,
+            'minimumNoiseAmount' : 0.001,
+            'maximumNoiseAmount' : 0.01
+        },
+
         'spectrogram' : {
             'n_fft' : 1024,
             'n_mels' : 56,

@@ -37,7 +37,7 @@ synthDataset_GroundTruth_CsvFIlePath = os.path.join(synthDataset_AudioFiles_Dire
 # synthesize the synthetic datasets, a synthetic dataset with uniform joint probability distribution is created, and
 # train, validation and test splits are made out of it, rather than creating a new synthetic dataset for each split.
 # This is to ensure that the validation and test splits are not biased towards the training split in any way (we know for sure they are expected to be different than the train split).
-synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_GroundTruth_CsvFIlePath, config_Dict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'], device, transform = config_Dict['neuralNetwork_Settings']['input_Transforms'])
+synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_GroundTruth_CsvFIlePath, config_Dict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'], config_Dict, device, transform = config_Dict['neuralNetwork_Settings']['input_Transforms'], applyNoise = config_Dict['inputTransforms_Settings']['addNoise']['perform'])
 
 numSamplesTrainSet = int(config_Dict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset))
 numSamplesValidationSet = int(config_Dict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset))
