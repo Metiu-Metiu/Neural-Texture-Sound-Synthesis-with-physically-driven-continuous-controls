@@ -2,8 +2,8 @@ import torch
 from torch import nn
 from enum import Enum
 import os # to save .pth file as a checkpoint
+import json
 import time
-from Configuration_Dictionary import configDict
 
 class NN_Type(Enum):
     NONE = 1
@@ -15,14 +15,7 @@ class Convolutional_DynamicNet(nn.Module):
     def __init__(self,
                  inputShape, # expects tuple or TORCH.TENSOR.SIZE representing number of input dimensions as (batch_size, channels, width) or (batch_size, channels, height, width), use torch.tensor.shape 
                  numberOfFeaturesToExtract,
-                 numberOfConvLayers = 1,
-                 kernelSizeOfConvLayers = 3,
-                 strideOfConvLayers = 1,
-                 numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1,
-                 kernelSizeOfPoolingLayers = 2,
-                 strideOfPoolingLayers = 2,
-                 numberOfFullyConnectedLayers = 1,
-                 fullyConnectedLayers_InputSizeDecreaseFactor = 2): # divider
+                 config_Dict): # divider
         if len(inputShape) == 3:
             print(f'{type(self).__name__} constructor: Instantating a 1D Convolutional Neural Network')
             self.NN_Type = NN_Type.ONE_D_CONV.name
@@ -36,6 +29,16 @@ class Convolutional_DynamicNet(nn.Module):
         self.inputShape = inputShape
         numberOfInputChannels = self.inputShape[1]
         numberOfFeaturesToExtract = numberOfInputChannels * numberOfFeaturesToExtract
+
+        numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeaturesToExtract_IncremMultiplier_FromLayer1']
+        numberOfConvLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfConvLayers']
+        kernelSizeOfConvLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfConvLayers']
+        strideOfConvLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfConvLayers']
+        kernelSizeOfPoolingLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfPoolingLayers']
+        strideOfPoolingLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfPoolingLayers']
+        numberOfFullyConnectedLayers = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers']
+        fullyConnectedLayers_InputSizeDecreaseFactor = config_Dict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']
+        leakyReLU_NegativeSlope = config_Dict['neuralNetwork_Settings']['activation_Function']['negative_slope']
 
         super(Convolutional_DynamicNet, self).__init__()
         self.conv_blocks = nn.ModuleList()
@@ -51,18 +54,16 @@ class Convolutional_DynamicNet(nn.Module):
             if self.NN_Type == NN_Type.ONE_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv1d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.BatchNorm1d(out_channels), 
                     # nn.ReLU(),
-                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-                    # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
-                    # nn.BatchNorm1d(out_channels), 
+                    nn.LeakyReLU(leakyReLU_NegativeSlope),
                     nn.MaxPool1d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
             elif self.NN_Type == NN_Type.TWO_D_CONV.name:
                 self.conv_blocks.append(nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, kernel_size = kernelSizeOfConvLayers, stride = strideOfConvLayers, padding = 0, groups = 1),
+                    nn.BatchNorm2d(out_channels),
                     # nn.ReLU(),
-                    nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-                    # nn.Dropout2d(configDict['neuralNetwork_Settings']['dropout_Probability']),
-                    # nn.BatchNorm2d(out_channels),
+                    nn.LeakyReLU(leakyReLU_NegativeSlope),
                     nn.MaxPool2d(kernel_size = kernelSizeOfPoolingLayers, stride = strideOfPoolingLayers)))
 
             num_out_channels_of_previous_layer = out_channels
@@ -77,35 +78,40 @@ class Convolutional_DynamicNet(nn.Module):
             if numberOfFullyConnectedLayers == 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
+                    nn.LeakyReLU(leakyReLU_NegativeSlope),
+                    # nn.Dropout1d(config_Dict['neuralNetwork_Settings']['dropout_Probability']),
                 ))
             elif fullyConnLayer < numberOfFullyConnectedLayers - 1:
                 num_output_features = int(num_features / fullyConnectedLayers_InputSizeDecreaseFactor)
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, num_output_features),
+                    nn.LeakyReLU(leakyReLU_NegativeSlope),
+                    # nn.Dropout1d(config_Dict['neuralNetwork_Settings']['dropout_Probability']),
                 ))
                 num_features = num_output_features
             elif fullyConnLayer == numberOfFullyConnectedLayers - 1:
                 self.fc_blocks.append(nn.Sequential(
                     nn.Linear(num_features, numberOfFeaturesToExtract),
+                    nn.LeakyReLU(leakyReLU_NegativeSlope),
                 ))
 
         # fixed architecture for fc layers (2 layers num_features -> 100, 100 -> numberOfFeaturesToExtract)
         # self.fc_blocks.append(nn.Sequential(
         #             nn.Linear(num_features, 6000),
         #             # nn.ReLU(),
-        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-        #             # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+        #             nn.LeakyReLU(leakyReLU_NegativeSlope),
+        #             # nn.Dropout1d(config_Dict['neuralNetwork_Settings']['dropout_Probability']),
         #         ))
         # self.fc_blocks.append(nn.Sequential(
         #             nn.Linear(6000, 100),
         #             # nn.ReLU(),
-        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope']),
-        #             # nn.Dropout1d(configDict['neuralNetwork_Settings']['dropout_Probability']),
+        #             nn.LeakyReLU(leakyReLU_NegativeSlope),
+        #             # nn.Dropout1d(config_Dict['neuralNetwork_Settings']['dropout_Probability']),
         #         ))
         # self.fc_blocks.append(nn.Sequential(
         #             nn.Linear(100, numberOfFeaturesToExtract),
         #             # nn.ReLU(),
-        #             nn.LeakyReLU(configDict['neuralNetwork_Settings']['activation_Function']['negative_slope'])
+        #             nn.LeakyReLU(leakyReLU_NegativeSlope)
         #         ))
 
     def forward(self, x):
@@ -168,25 +174,31 @@ def train_single_epoch(model, data_loader, loss_fn, optimizer, device):
 ########################################
 
 ########################################
-def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, optimizer, device, number_Of_Epochs):
+def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, optimizer, device, number_Of_Epochs, config_Dict):
     hasCheckpointFile_AlreadyBeenSaved = False
     checkpoint = {}
     for epoch in range(number_Of_Epochs):
         print(f"Epoch {epoch+1}")
         train_single_epoch(nn_Model, train_dataloader, loss_Function, optimizer, device)
         if validation_dataLoader is not None:
-            validationLoss = validate(validation_dataLoader, nn_Model, loss_Function)
+            validationLoss = validate(validation_dataLoader, nn_Model, loss_Function, config_Dict)
             if epoch == 0:
                 lastBestValidationLoss = validationLoss
             else:
                 if validationLoss > lastBestValidationLoss: # validation loss is increasing
                     if hasCheckpointFile_AlreadyBeenSaved == False:
                         print("Saving checkpoint dictionary with model...")
-                        torch.save(checkpoint, os.path.join(os.path.abspath(configDict['outputFilesSettings']['outputFolder_Path']), (str(configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+                        torch.save(checkpoint, os.path.join(os.path.abspath(config_Dict['outputFilesSettings']['outputFolder_Path']), (str(config_Dict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) +  str(".pth"))))
+                        checkpoint_JSonDict = {
+                            'epoch_n' : checkpoint['epoch_n'],
+                            'validation_loss' : checkpoint['validation_loss'],
+                        }
+                        with open(os.path.join(os.path.abspath(config_Dict['outputFilesSettings']['outputFolder_Path']), (str(config_Dict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) + str('_Checkpoint') + str(".json"))), 'w') as jsonfile:
+                            json.dump(checkpoint_JSonDict, jsonfile, indent=4)
                         hasCheckpointFile_AlreadyBeenSaved = True
                         print("Checkpoint dictionary with model saved")
-                    if configDict['neuralNetwork_Settings']['early_Stopping'] == True:
-                        if epoch + 1 >= configDict['neuralNetwork_Settings']['minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive']:
+                    if config_Dict['neuralNetwork_Settings']['early_Stopping'] == True:
+                        if epoch + 1 >= config_Dict['neuralNetwork_Settings']['minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive']:
                             print("Early stopping")
                             break
                 else:
@@ -204,15 +216,15 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
 ########################################
 
 ########################################
-def validate(data_loader, model, loss_fn):
+def validate(data_loader, model, loss_fn, config_Dict):
     # THE VALIDATION DATA LOADER SHOULD BE CREATED WITH drop_last = True
     # SO THAT ALL BATCHES HAVE THE SAME SIZE AND THE VALIDATION LOSS CAN BE MORE EASILY BE CALCULATED
     cumulative_loss = 0.0
     model.eval()
     with torch.no_grad():
         for x, target in data_loader:
-            x = x.to(configDict['pyTorch_General_Settings']['device'])
-            target = target.to(configDict['pyTorch_General_Settings']['device'])
+            x = x.to(config_Dict['pyTorch_General_Settings']['device'])
+            target = target.to(config_Dict['pyTorch_General_Settings']['device'])
 
             output = model(x)
             loss = loss_fn(output, target)
@@ -227,7 +239,7 @@ def validate(data_loader, model, loss_fn):
 ########################################
 
 ########################################
-def test(data_loader, model, loss_fn):
+def test(data_loader, model, loss_fn, config_Dict):
     # if loader.dataset.train:
     #     print(f'Validating model on the training set')
     # else:
@@ -237,8 +249,8 @@ def test(data_loader, model, loss_fn):
     model.eval()
     with torch.no_grad():
         for x, target in data_loader:
-            x = x.to(configDict['pyTorch_General_Settings']['device'])
-            target = target.to(configDict['pyTorch_General_Settings']['device'])
+            x = x.to(config_Dict['pyTorch_General_Settings']['device'])
+            target = target.to(config_Dict['pyTorch_General_Settings']['device'])
 
             output = model(x)
             loss = loss_fn(output, target)
@@ -249,15 +261,13 @@ def test(data_loader, model, loss_fn):
     
     mean_loss = cumulative_loss / len(data_loader)
     print(f"Mean test loss over all batches: {mean_loss}")
-        
-    # configDict['statistics']['mean_TestLoss_OverAllBatches'] = mean_loss
-    
+            
     model.train()
     return loss
 ########################################
 
 ########################################
-def perform_inference_byExtractingSynthesisControlParameters(data_loader, model, syntheticDataset_LabelsNames):
+def perform_inference_byExtractingSynthesisControlParameters(data_loader, model, syntheticDataset_LabelsNames, config_Dict):
     # returns a dictionary like {'audioFileName.wav' : {synthContrParam1 : value1, synthContrParam2 : value2, ...}}
     # where 'audioFileName.wav' are the keys and [labels] are the values
 
@@ -265,7 +275,7 @@ def perform_inference_byExtractingSynthesisControlParameters(data_loader, model,
     model.eval()
     with torch.no_grad():
         for x, target in data_loader:
-            x = x.to(configDict['pyTorch_General_Settings']['device'])            
+            x = x.to(config_Dict['pyTorch_General_Settings']['device'])            
 
             batch_output = model(x)
 

@@ -14,9 +14,7 @@ class Dataset_Wrapper(Dataset):
     def __init__(self,
                 audioFiles_Directory_,
                 groundTruth_CsvFIlePath_,
-                rangeOfColumnNumbers_ToConsiderInCsvFile_, 
                 configDict,
-                device_, 
                 transform = None,
                 target_transform = None,
                 applyNoise = False):
@@ -29,11 +27,13 @@ class Dataset_Wrapper(Dataset):
         # print(f'    Ground truth .csv file path : {groundTruth_CsvFIlePath_}')
         # print(f'    Range of column numbers to consider in the .csv file : {rangeOfColumnNumbers_ToConsiderInCsvFile_}')   
         self.configDict = configDict
+        random.seed(self.configDict['pyTorch_General_Settings']['manual_seed'])
+
         self.applyNoise = applyNoise
-        self.device = device_
+        self.device = self.configDict['pyTorch_General_Settings']['device']
         self.labels = pandas.read_csv(groundTruth_CsvFIlePath_)
-        if rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None:
-            self.rangeOfColumnNumbers_ToConsiderInCsvFile = rangeOfColumnNumbers_ToConsiderInCsvFile_
+        if self.configDict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'] is not None:
+            self.rangeOfColumnNumbers_ToConsiderInCsvFile = self.configDict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile']
             self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] += 1 # to include the last column
             self.numberOfLabels = (self.rangeOfColumnNumbers_ToConsiderInCsvFile[1] - self.rangeOfColumnNumbers_ToConsiderInCsvFile[0])
             # print(f'    self.numberOfLabels : {self.numberOfLabels}')
@@ -57,7 +57,7 @@ class Dataset_Wrapper(Dataset):
 
     def __getitem__(self, idx):
         '''
-        If rangeOfColumnNumbers_ToConsiderInCsvFile_ is not None in the constructor, returns a tuple (audioFile, target) where target is a list of labels
+        If self.configDict['syntheticDataset_Settings']['rangeOfColumnNumbers_ToConsiderInCsvFile'] is not None in the constructor, returns a tuple (audioFile, target) where target is a list of labels
         Else, returns a tuple (audioFile, target) where target is the name of the audioFile
         '''
         verbose = False
@@ -83,10 +83,14 @@ class Dataset_Wrapper(Dataset):
             if verbose:
                 plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             if self.applyNoise:
-                audioSignal_Norm = add_noise(audioSignal_Norm, sample_rate, 0.5, self.configDict['inputTransforms_Settings']['addNoise']['minimum_LowPassFilter_FreqThreshold'],
+                audioSignal_Norm = add_noise(audioSignal_Norm,
+                                            self.labels.iloc[idx, 0],
+                                            sample_rate,
+                                            self.configDict['inputTransforms_Settings']['addNoise']['minimum_LowPassFilter_FreqThreshold'],
                                             self.configDict['inputTransforms_Settings']['addNoise']['maximum_LowPassFilter_FreqThreshold'],
                                             self.configDict['inputTransforms_Settings']['addNoise']['minimumNoiseAmount'],
-                                            self.configDict['inputTransforms_Settings']['addNoise']['maximumNoiseAmount'])
+                                            self.configDict['inputTransforms_Settings']['addNoise']['maximumNoiseAmount'],
+                                            verbose)
             if verbose:
                 plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             audioSignal_Norm = audioSignal_Norm.to(self.device)
@@ -162,12 +166,13 @@ def plot_fbank(fbank, title=None):
     plt.show(block = True)
 
 def add_noise(audio_waveform,
+                audio_file_name,
                 in_sample_rate,
-                noise_factor, 
                 minimum_LowPassFilter_FreqThreshold,
                 maximum_LowPassFilter_FreqThreshold,
                 minimumNoiseAmount,
-                maximumNoiseAmount):
+                maximumNoiseAmount,
+                verbose):
 
     specrogramTransform = torchaudio.transforms.Spectrogram(n_fft=1024, power=2)
 
@@ -178,20 +183,28 @@ def add_noise(audio_waveform,
 
     # Define effects
     threshold = torch.randint(minimum_LowPassFilter_FreqThreshold, maximum_LowPassFilter_FreqThreshold, (1,))
-    print(str(int(threshold)))
+    # print(str(int(threshold)))
     effects = [
         ["lowpass", str(int(threshold))],  # apply single-pole lowpass filter
     ]
     filteredNoise, filteredNoiseSampRate = torchaudio.sox_effects.apply_effects_tensor(noise_norm, in_sample_rate, effects)
+    if filteredNoiseSampRate != in_sample_rate:
+        print('WARNING : add_noise -> filteredNoiseSampRate != in_sample_rate')
 
-    plot_spectrogram(specrogramTransform(audio_waveform[0]), title = 'Original audio')
+    if verbose:
+        plot_spectrogram(specrogramTransform(audio_waveform[0]), title = 'Original audio')
     noisy_waveform = audio_waveform + (filteredNoise * random.uniform(minimumNoiseAmount, maximumNoiseAmount))
-    plot_spectrogram(specrogramTransform(noisy_waveform[0]), title = 'Audio with noise')
+    if verbose:
+        plot_spectrogram(specrogramTransform(noisy_waveform[0]), title = 'Audio with noise')
 
     # re-normalize
     noisy_waveform_abs = torch.abs(noisy_waveform)
     noisy_waveform_max = torch.max(noisy_waveform_abs)
     noisy_waveform_norm = torch.div(noisy_waveform, noisy_waveform_max) # normalize audio waveform between -1. and 1.
+
+    # TEST save nosy Audio file for evaluation
+    # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', audio_file_name), audio_waveform, filteredNoiseSampRate)
+    # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', str('noisy_' + audio_file_name)), noisy_waveform_norm, filteredNoiseSampRate)
 
     return noisy_waveform_norm
 ######################################################################################################################################################

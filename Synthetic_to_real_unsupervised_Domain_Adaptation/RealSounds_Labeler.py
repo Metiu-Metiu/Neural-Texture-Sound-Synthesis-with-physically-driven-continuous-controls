@@ -10,7 +10,13 @@ from torchsummary import summary
 
 from Dataset_Wrapper import Dataset_Wrapper
 from Neural_Networks import Convolutional_DynamicNet, train, test, perform_inference_byExtractingSynthesisControlParameters
-from Configuration_Dictionary import configDict
+
+############### INPUT VARIABLES ###############
+configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/Old/2D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm/2D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm.json'
+###############################################
+
+with open(configDict_JSonFilePath) as configDict_JSonFile:
+    configDict = json.load(configDict_JSonFile)
 
 torch.manual_seed(configDict['pyTorch_General_Settings']['manual_seed'])
 device = configDict['pyTorch_General_Settings']['device']
@@ -28,11 +34,11 @@ realDataset_AudioFiles_Directory_ParentFold = os.path.abspath(realDatasetGenerat
 realDataset_AudioFiles_Directory = os.path.join(realDataset_AudioFiles_Directory_ParentFold, realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'])
 realDataset_CsvFilePath = os.path.join(realDataset_AudioFiles_Directory, str(realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'] + '.csv'))
 
-realDataset = Dataset_Wrapper(realDataset_AudioFiles_Directory, realDataset_CsvFilePath, None, device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
+realDataset = Dataset_Wrapper(realDataset_AudioFiles_Directory, realDataset_CsvFilePath, configDict, transform = exec(configDict['neuralNetwork_Settings']['input_Transforms']))
 realDataset_DL = DataLoader(realDataset, batch_size = configDict['neuralNetwork_Settings']['batch_size'], shuffle = False)
 
 # test inference with synthetic data (only eval split for speeding up the inference process)
-synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, None, device, transform = configDict['neuralNetwork_Settings']['input_Transforms'])
+synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, None, device, transform = exec(configDict['neuralNetwork_Settings']['input_Transforms']))
 
 numSamplesTrainSet = int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset))
 numSamplesValidationSet = int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset))
@@ -64,16 +70,6 @@ conv_1D_Net_PreTrained = Convolutional_DynamicNet(inputTensor.shape,
                         numberOfFullyConnectedLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers'],
                         fullyConnectedLayers_InputSizeDecreaseFactor = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
 
-# conv_1D_Net_PreTrained = Convolutional_DynamicNet(configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['inputTensor_Shape'],
-#                         configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeatures_ToExtract'],
-#                         numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFeaturesToExtract_IncremMultiplier_FromLayer1'],
-#                         numberOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfConvLayers'],
-#                         kernelSizeOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfConvLayers'],
-#                         strideOfConvLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfConvLayers'],
-#                         kernelSizeOfPoolingLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['kernelSizeOfPoolingLayers'],
-#                         strideOfPoolingLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['strideOfPoolingLayers'],
-#                         numberOfFullyConnectedLayers = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['numberOfFullyConnectedLayers'],
-#                         fullyConnectedLayers_InputSizeDecreaseFactor = configDict['neuralNetwork_Settings']['arguments_For_Convolutional_DynamicNet_Constructor']['fullyConnectedLayers_InputSizeDecreaseFactor']).to(device)     
 print(f'Model output shape : {conv_1D_Net_PreTrained(inputTensor).shape}')
 # summary(conv_1D_Net_PreTrained, inputTensor.shape)
 

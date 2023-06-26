@@ -52,10 +52,10 @@ configDict = {
 
         'addNoise' : {
             'perform' : True, # either True or False
-            'minimum_LowPassFilter_FreqThreshold' : 3000,
-            'maximum_LowPassFilter_FreqThreshold' : 12000,
-            'minimumNoiseAmount' : 0.001,
-            'maximumNoiseAmount' : 0.01
+            'minimum_LowPassFilter_FreqThreshold' : 6000,
+            'maximum_LowPassFilter_FreqThreshold' : 14000,
+            'minimumNoiseAmount' : 0.005,
+            'maximumNoiseAmount' : 0.02
         },
 
         'spectrogram' : {
@@ -65,22 +65,22 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 250,
+        'number_Of_Epochs': 1,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
-        'learning_Rate': 0.001, # 0.0005
+        'learning_Rate': 0.0005, # 0.0005
         'dropout_Probability': 0.4,
         'arguments_For_Convolutional_DynamicNet_Constructor': {
-            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 1,
-            'numberOfConvLayers': 3,
-            'kernelSizeOfConvLayers': 7,
+            'numberOfFeaturesToExtract_IncremMultiplier_FromLayer1': 2,
+            'numberOfConvLayers': 4,
+            'kernelSizeOfConvLayers': 3,
             'strideOfConvLayers': 1,
             'kernelSizeOfPoolingLayers': 2,
             'strideOfPoolingLayers': 2,
             'numberOfFullyConnectedLayers': 3,
-            'fullyConnectedLayers_InputSizeDecreaseFactor': 10
+            'fullyConnectedLayers_InputSizeDecreaseFactor': 4
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 250,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 1,
         'loss' : {
             # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
             'reduction' : 'mean'
@@ -93,13 +93,12 @@ configDict = {
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels',
-        'jSonFile_WithThisDict_Name': '1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels',
-        'pyTorch_NN_StateDict_File_Name': '1D_CNN_SynthParamExtractor_June11_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_3ConvFilters_BiggerKernels'
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm',
+        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm',
+        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm'
     },
 
     'statistics': {
-        'mean_TestLoss_OverAllBatches' : None,
         'elapsedTime_WhileTraining' : None,
         'dateAndTime_WhenTrainingFinished_dd/mm/YY H:M:S' : None,
     }
@@ -110,10 +109,10 @@ configDict['neuralNetwork_Settings']['input_Transforms'] = [
     torchaudio.transforms.Resample(
         orig_freq = configDict['validation']['nominal_SampleRate'],
         new_freq = configDict['inputTransforms_Settings']['resample']['new_freq']),
-    # torchaudio.transforms.MelSpectrogram(
-    #     # n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
-    #     normalized = True,
-    #     n_mels = configDict['inputTransforms_Settings']['spectrogram']['n_mels'], # with 128 -default-: UserWarning: At least one mel filterbank has all zero values. The value for `n_mels` (128) may be set to
-    #     sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
+    torchaudio.transforms.MelSpectrogram(
+        # n_fft = configDict['inputTransforms_Settings']['spectrogram']['n_fft'],
+        normalized = True,
+        n_mels = configDict['inputTransforms_Settings']['spectrogram']['n_mels'], # with 128 -default-: UserWarning: At least one mel filterbank has all zero values. The value for `n_mels` (128) may be set to
+        sample_rate = configDict['inputTransforms_Settings']['resample']['new_freq'])
         ]
 #########################################################################
