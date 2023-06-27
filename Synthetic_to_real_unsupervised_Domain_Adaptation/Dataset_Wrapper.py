@@ -17,7 +17,8 @@ class Dataset_Wrapper(Dataset):
                 configDict,
                 transform = None,
                 target_transform = None,
-                applyNoise = False):
+                applyNoise = False,
+                supervised_Task = True):
         '''
         For supervised tasks, rangeOfColumnNumbers_ToConsiderInCsvFile_ must not be None. 
         See __getItem()__ documentation for more details.
@@ -51,6 +52,9 @@ class Dataset_Wrapper(Dataset):
             self.target_transform = target_transform.to(self.device)
         else:
             self.target_transform = None
+        if not supervised_Task:
+            self.rangeOfColumnNumbers_ToConsiderInCsvFile = None
+            self.numberOfLabels = None
 
     def __len__(self):
         return len(self.labels)

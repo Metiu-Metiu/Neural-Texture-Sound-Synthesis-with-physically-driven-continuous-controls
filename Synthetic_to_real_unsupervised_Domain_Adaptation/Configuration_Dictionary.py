@@ -65,7 +65,7 @@ configDict = {
     },
 
     'neuralNetwork_Settings': {
-        'number_Of_Epochs': 1,
+        'number_Of_Epochs': 250,
         'batch_size': 128, # try to decide a batch_size so that the total number of samples in the dataset is divisible by the batch size
         'learning_Rate': 0.0005, # 0.0005
         'dropout_Probability': 0.4,
@@ -80,7 +80,7 @@ configDict = {
             'fullyConnectedLayers_InputSizeDecreaseFactor': 4
         },
         'early_Stopping': True,
-        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 1,
+        'minimum_NumberOfEpochsToTrain_RegardlessOfEarlyStoppingBeingActive': 250,
         'loss' : {
             # https://pytorch.org/docs/stable/generated/torch.nn.L1Loss.html
             'reduction' : 'mean'

@@ -92,12 +92,18 @@ config_Dict['statistics']['elapsedTime_WhileTraining'] = trainingTimeElapsed
 test(synthDS_TestDL, conv_1D_Net, loss_Function, config_Dict)
 print(f'Finished testing.')
 
-def getConfigDict_InputTransforms():
-    return config_Dict['neuralNetwork_Settings']['input_Transforms']
+def jSonEncodeInputTransforms():
+    jSonDict = dict()
+    for transform in config_Dict['neuralNetwork_Settings']['input_Transforms']:
+        if isinstance(transform, torchaudio.transforms.Resample):
+            jSonDict['torchaudio.transforms.Resample'] = {'orig_freq': configDict['validation']['nominal_SampleRate'], 'new_freq': configDict['inputTransforms_Settings']['resample']['new_freq']}
+        elif isinstance(transform, torchaudio.transforms.MelSpectrogram):
+            jSonDict['torchaudio.transforms.MelSpectrogram'] = {'normalized': True, 'n_mels': configDict['inputTransforms_Settings']['spectrogram']['n_mels'], 'sample_rate': configDict['inputTransforms_Settings']['resample']['new_freq']}
+    return jSonDict
 
 config_Dict['pyTorch_General_Settings']['device'] = str(config_Dict['pyTorch_General_Settings']['device'])
 config_Dict['pyTorch_General_Settings']['dtype'] = str(config_Dict['pyTorch_General_Settings']['dtype'])
-# config_Dict['neuralNetwork_Settings']['input_Transforms'] = inspect.getsource(getConfigDict_InputTransforms())
+config_Dict['neuralNetwork_Settings']['input_Transforms'] = jSonEncodeInputTransforms()
 jsonFileName = config_Dict['outputFilesSettings']['jSonFile_WithThisDict_Name'] + str('_ConfigDict') + str(".json")
 jsonFilePath = os.path.join(config_Dict['outputFilesSettings']['outputFolder_Path'], jsonFileName)
 with open(jsonFilePath, 'w') as jsonfile:
