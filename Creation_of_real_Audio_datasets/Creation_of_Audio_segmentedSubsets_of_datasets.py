@@ -7,6 +7,7 @@ import essentia.standard as essentia
 import csv
 import json
 import pandas # to merge dev and eval .csv files into one .csv file
+import numpy
 
 class Loader_Library(Enum):
     SOUNDATA = 1
@@ -165,19 +166,22 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                                 segmentNum = 1
                                 if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
                                     for segment in audioSegments:
-                                        outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
-                                        output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                                        if os.path.exists(output_file_path):
-                                            print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
-                                            exit()
-                                        essentia.MonoWriter(filename = output_file_path)(segment)
-                                        csvReaderRow_FileNameModified = csvReaderRow
-                                        csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
-                                        csvWriter.writerow(csvReaderRow_FileNameModified)
-                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
-                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
-                                        segmentNum += 1
-                                        subsetDataset_Augm_Size += 1
+                                        audioSignal_Abs = numpy.absolute(segment)
+                                        audioSignal_Max = numpy.max(audioSignal_Abs)
+                                        if audioSignal_Max > 0.:
+                                            outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
+                                            output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                            if os.path.exists(output_file_path):
+                                                print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                                exit()
+                                            essentia.MonoWriter(filename = output_file_path)(segment)
+                                            csvReaderRow_FileNameModified = csvReaderRow
+                                            csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
+                                            csvWriter.writerow(csvReaderRow_FileNameModified)
+                                            outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
+                                            outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
+                                            segmentNum += 1
+                                            subsetDataset_Augm_Size += 1
                             else: # NO SEGMENTATION ##########################################################################################################
                                 output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), canonicalFileName)
                                 if os.path.exists(output_file_path):
@@ -206,19 +210,22 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
                             segmentNum = 1
                             if len(canonicalFileAudioWaveF_AndSR[0]) >= segmentSize_Samp:
                                 for segment in audioSegments:
-                                    outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
-                                    output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
-                                    if os.path.exists(output_file_path):
-                                        print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
-                                        exit()
-                                    essentia.MonoWriter(filename = output_file_path)(segment)
-                                    csvReaderRow_FileNameModified = csvReaderRow
-                                    csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
-                                    csvWriter.writerow(csvReaderRow_FileNameModified)
-                                    outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
-                                    outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
-                                    segmentNum += 1
-                                    subsetDataset_Augm_Size += 1
+                                    audioSignal_Abs = numpy.absolute(segment)
+                                    audioSignal_Max = numpy.max(audioSignal_Abs)
+                                    if audioSignal_Max > 0.:
+                                        outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
+                                        output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), str(outputSubFolderSplitName), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                        if os.path.exists(output_file_path):
+                                            print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                            exit()
+                                        essentia.MonoWriter(filename = output_file_path)(segment)
+                                        csvReaderRow_FileNameModified = csvReaderRow
+                                        csvReaderRow_FileNameModified[0] = str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])
+                                        csvWriter.writerow(csvReaderRow_FileNameModified)
+                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = dict()
+                                        outputCsvFile_Dict[str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])] = inputCsvFile_Dict[canonicalFileName_NoExt]
+                                        segmentNum += 1
+                                        subsetDataset_Augm_Size += 1
                         csvReaderRowCounter += 1
                 else: # NO SEGMENTATION ##########################################################################################################
                     print('Why should you copy the entire canonical dataset if you don\'t want to create a subset of it, nor segment it ?')
