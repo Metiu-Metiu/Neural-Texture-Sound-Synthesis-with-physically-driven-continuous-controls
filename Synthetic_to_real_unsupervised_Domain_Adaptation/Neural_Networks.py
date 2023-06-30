@@ -264,6 +264,52 @@ def train(nn_Model, train_dataloader, validation_dataLoader, loss_Function, opti
 ########################################
 
 ########################################
+def train_single_epoch_ConvLayers_withFrozenFCLayers(frozen_nn_Model, 
+                       model,
+                       data_loader,
+                       loss_fn,
+                       optimizer,
+                       device):
+    # size = len(dataloader.dataset)
+
+    frozen_nn_Model.eval()
+    for param in frozen_nn_Model.parameters():
+        param.requires_grad = False
+
+    cumulative_loss = 0.0
+    batch_number = 1
+    for input, target in data_loader:
+        input = input.to(device)
+        input = model(input)
+
+        output = frozen_nn_Model(input)
+        print(f'train_single_epoch_ConvLayers_withFrozenFCLayers : model output : {output}')
+        print(f'train_single_epoch_ConvLayers_withFrozenFCLayers : model output shape : {output.shape}')
+        # if output > 0.5:
+        #     output = 1.
+        loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32)) # target = real input (see Dataset_Wrapper.py line 183)
+
+        # backpropagate error and update weights. https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html 
+        loss.backward() # Backpropagate the prediction loss. PyTorch deposits the gradients of the loss w.r.t. each parameter.
+        optimizer.step() # adjust the parameters by the gradients collected in the backward pass
+        optimizer.zero_grad() # reset the gradients of model parameters. Gradients by default add up; to prevent double-counting, we explicitly zero them at each iteration.
+
+        print(f'Batch number: {batch_number}')
+        print(f'        Sample 1: Model output: {output[0]}')
+        print(f'        Sample 1:       Target: {1.}')
+        print(f'        Sample 1:         Loss: {loss_fn(output[0], torch.ones(1, dtype = torch.float32))}')
+
+        print(f'    Loss: {loss.item()}')
+
+        cumulative_loss += loss.item()
+        batch_number += 1
+
+    print(f"Train loss of last batch: {loss.item()}")
+    mean_loss = cumulative_loss / len(data_loader)
+    print(f"Mean train loss of whole epoch: {mean_loss}")
+########################################
+
+########################################
 def train_single_epoch_FCLayers_withFrozenConvLayers(frozen_nn_Model, 
                        model,
                        data_loader,
@@ -303,6 +349,56 @@ def train_single_epoch_FCLayers_withFrozenConvLayers(frozen_nn_Model,
     print(f"Train loss of last batch: {loss.item()}")
     mean_loss = cumulative_loss / len(data_loader)
     print(f"Mean train loss of whole epoch: {mean_loss}")
+########################################
+
+########################################
+def train_ConvLayers_withFrozenFCLayers(frozen_nn_Model,
+                          nn_Model,
+                          train_dataloader,
+                          validation_dataLoader,
+                          loss_Function,
+                          optimizer,
+                          device,
+                          number_Of_Epochs,
+                          config_Dict):
+    frozen_nn_Model.eval()
+    for param in frozen_nn_Model.parameters():
+        param.requires_grad = False
+    stringSuffix = str('_ConvLayers_TargetDomainAdaptation')
+    hasCheckpointFile_AlreadyBeenSaved = False
+    checkpoint = {}
+    for epoch in range(number_Of_Epochs):
+        print(f"Epoch {epoch+1}")
+        train_single_epoch_ConvLayers_withFrozenFCLayers(frozen_nn_Model, nn_Model, train_dataloader, loss_Function, optimizer, device)
+        if validation_dataLoader is not None:
+            validationLoss = validate_ConvLayers_withFrozenFCLayers(validation_dataLoader, frozen_nn_Model, nn_Model, loss_Function, config_Dict)
+            if epoch == 0:
+                lastBestValidationLoss = validationLoss
+            else:
+                if validationLoss > lastBestValidationLoss: # validation loss is increasing
+                    if hasCheckpointFile_AlreadyBeenSaved == False:
+                        print("Saving checkpoint dictionary with model...")
+                        torch.save(checkpoint, os.path.join(os.path.abspath(config_Dict['outputFilesSettings']['outputFolder_Path']), (str(config_Dict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) + stringSuffix + str(".pth"))))
+                        checkpoint_JSonDict = {
+                            'epoch_n' : checkpoint['epoch_n'],
+                            'validation_loss' : checkpoint['validation_loss'],
+                        }
+                        with open(os.path.join(os.path.abspath(config_Dict['outputFilesSettings']['outputFolder_Path']), (str(config_Dict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name']) + stringSuffix + str('_Checkpoint') + str(".json"))), 'w') as jsonfile:
+                            json.dump(checkpoint_JSonDict, jsonfile, indent=4)
+                        hasCheckpointFile_AlreadyBeenSaved = True
+                        print("Checkpoint dictionary with model saved")
+                else:
+                    lastBestValidationLoss = validationLoss # validation loss is decreasing
+                    checkpoint = {
+                        'epoch_n' : epoch + 1,
+                        'validation_loss' : lastBestValidationLoss,
+                        'model_state_dict' : nn_Model.state_dict(),
+                        'optimizer_state_dict' : optimizer.state_dict(),
+                    }
+                    hasCheckpointFile_AlreadyBeenSaved = False
+
+        print("---------------------------")
+    print("Finished training")
 ########################################
 
 ########################################
@@ -379,6 +475,31 @@ def validate(data_loader, model, loss_fn, config_Dict):
 ########################################
 
 ########################################
+def validate_ConvLayers_withFrozenFCLayers(data_loader, frozen_nn_Model, model, loss_fn, config_Dict):
+    # THE VALIDATION DATA LOADER SHOULD BE CREATED WITH drop_last = True
+    # SO THAT ALL BATCHES HAVE THE SAME SIZE AND THE VALIDATION LOSS CAN BE MORE EASILY BE CALCULATED
+    cumulative_loss = 0.0
+    frozen_nn_Model.eval()
+    model.eval()
+    with torch.no_grad():
+        for x, target in data_loader:
+            x = x.to(config_Dict['pyTorch_General_Settings']['device'])
+
+            x = model(x)
+
+            output = frozen_nn_Model(x)
+            loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32))
+            cumulative_loss += loss.item()
+    
+    print(f"Validation loss of last batch: {loss.item()}")
+    mean_loss = cumulative_loss / len(data_loader)
+    print(f"Validation loss of whole epoch (all batches have the same size): {mean_loss}")
+        
+    model.train()
+    return mean_loss
+########################################
+
+########################################
 def validate_FCLayers_withFrozenConvLayers(data_loader, frozen_nn_Model, model, loss_fn, config_Dict):
     # THE VALIDATION DATA LOADER SHOULD BE CREATED WITH drop_last = True
     # SO THAT ALL BATCHES HAVE THE SAME SIZE AND THE VALIDATION LOSS CAN BE MORE EASILY BE CALCULATED
@@ -402,6 +523,36 @@ def validate_FCLayers_withFrozenConvLayers(data_loader, frozen_nn_Model, model, 
         
     model.train()
     return mean_loss
+########################################
+
+########################################
+def test_ConvLayers_withFrozenFCLayers(data_loader, frozen_model, model, loss_fn, config_Dict):
+    # if loader.dataset.train:
+    #     print(f'Validating model on the training set')
+    # else:
+    #     print(f'Validating model on the test set')
+
+    cumulative_loss = 0.0
+    frozen_model.eval()
+    model.eval()
+    with torch.no_grad():
+        for x, target in data_loader:
+            x = x.to(config_Dict['pyTorch_General_Settings']['device'])
+
+            x = model(x)
+
+            output = frozen_model(x)
+            loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32))
+            cumulative_loss += loss.item()
+            print(f'    Output of the network: {output}')
+            print(f'    Target: {torch.ones([output.shape[0], 1], dtype = torch.float32)}')
+            print(f"Batch test loss: {loss.item()}")
+    
+    mean_loss = cumulative_loss / len(data_loader)
+    print(f"Mean test loss over all batches: {mean_loss}")
+            
+    model.train()
+    return loss
 ########################################
 
 ########################################
