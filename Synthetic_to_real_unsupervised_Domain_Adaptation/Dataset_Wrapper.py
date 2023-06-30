@@ -6,6 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import librosa
 import random
+import json
 
 ######################################################################################################################################################
 # DATASET CLASS (extends torch.utils.data.Dataset) 
@@ -130,6 +131,100 @@ class Dataset_Wrapper(Dataset):
             return list(self.labels.columns[self.rangeOfColumnNumbers_ToConsiderInCsvFile[0]:self.rangeOfColumnNumbers_ToConsiderInCsvFile[1]])
         else:
             return list()
+######################################################################################################################################################
+
+######################################################################################################################################################
+# MIXED DATASET CLASS (extends torch.utils.data.Dataset) 
+
+class Mixed_Dataset_Wrapper(Dataset):
+    def __init__(self,
+                configDict,
+                transform = None):
+        
+        self.configDict = configDict
+        random.seed(self.configDict['pyTorch_General_Settings']['manual_seed'])
+
+        self.device = self.configDict['pyTorch_General_Settings']['device']
+
+        with open(self.configDict['paths']['synthDataset_JSonFile_Path']) as synthDataset_JSonFile:
+            synthDatasetGenerator_DescriptorDict = json.load(synthDataset_JSonFile)
+        self.synthDataset_AudioFiles_Directory = os.path.abspath(synthDatasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'])
+        print(f'Synthetic dataset directory : {self.synthDataset_AudioFiles_Directory}')
+        synthDataset_CsvFilePath = os.path.join(self.synthDataset_AudioFiles_Directory, str(synthDatasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + '.csv'))
+        self.syntheticAudioFilesLabels = pandas.read_csv(synthDataset_CsvFilePath)
+
+        with open(self.configDict['paths']['realDataset_JSonFile_Path']) as realDataset_JSonFile:
+            realDatasetGenerator_DescriptorDict = json.load(realDataset_JSonFile)
+        realDataset_AudioFiles_Directory_ParentFold = os.path.abspath(realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_ParentFolder'])
+        self.realDataset_AudioFiles_Directory = os.path.join(realDataset_AudioFiles_Directory_ParentFold, realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'])
+        print(f'Real dataset directory : {self.realDataset_AudioFiles_Directory}')
+        realDataset_CsvFilePath = os.path.join(self.realDataset_AudioFiles_Directory, str(realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'] + '.csv'))
+        self.realAudioFilesLabels = pandas.read_csv(realDataset_CsvFilePath)
+
+        if transform:
+            self.transforms = transform
+            for transform in self.transforms:
+                transform = transform.to(self.device)
+        else:
+            self.transforms = None
+
+    def __len__(self):
+        # MAKE SURE len(self.syntheticAudioFilesLabels) >= len(self.realAudioFilesLabels)
+        return len(self.realAudioFilesLabels) * 2
+
+    def __getitem__(self, idx):
+        verbose = False
+
+        if idx < len(self.realAudioFilesLabels):
+            # chosenToReturnRealAudioFile = random.choice([True, False])
+            chosenToReturnRealAudioFile = True
+        else:
+            chosenToReturnRealAudioFile = False
+        if chosenToReturnRealAudioFile:
+            # print(f'{self.realAudioFilesLabels.iloc[idx, 0]}')
+            audioFile_path = os.path.join(self.realDataset_AudioFiles_Directory, self.realAudioFilesLabels.iloc[idx, 0])
+            audioFIleName = self.realAudioFilesLabels.iloc[idx, 0]
+            label = torch.ones(1, dtype=torch.float32)
+        else:
+            # print(f'{self.syntheticAudioFilesLabels.iloc[idx, 0]}')
+            audioFile_path = os.path.join(self.synthDataset_AudioFiles_Directory, self.syntheticAudioFilesLabels.iloc[idx, 0])
+            audioFIleName = self.syntheticAudioFilesLabels.iloc[idx, 0]
+            label = torch.zeros(1, dtype=torch.float32)
+        if os.path.exists(audioFile_path):
+            audioSignal, sample_rate = torchaudio.load(audioFile_path)
+            audioSignal_Abs = torch.abs(audioSignal)
+            audioSignal_Max = torch.max(audioSignal_Abs)
+            if audioSignal_Max == 0.:
+                print(f'ERROR : {audioFIleName} waveform is all 0-valued')
+                exit()
+                audioSignal_Norm = torch.zeros(audioSignal.shape)
+            else:
+                audioSignal_Norm = torch.div(audioSignal, audioSignal_Max) # normalize audio waveform between -1. and 1.
+            if verbose:
+                plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = audioFIleName)
+            if not chosenToReturnRealAudioFile:
+                audioSignal_Norm = add_noise(audioSignal_Norm,
+                                            audioFIleName,
+                                            sample_rate,
+                                            self.configDict['inputTransforms_Settings']['addNoise']['minimum_LowPassFilter_FreqThreshold'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['maximum_LowPassFilter_FreqThreshold'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['minimumNoiseAmount'],
+                                            self.configDict['inputTransforms_Settings']['addNoise']['maximumNoiseAmount'],
+                                            verbose)
+            if verbose:
+                plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = audioFIleName)
+            audioSignal_Norm = audioSignal_Norm.to(self.device)
+            if self.transforms:
+                for trans_Num, transform in enumerate(self.transforms):
+                    audioSignal_Norm = transform(audioSignal_Norm)
+                    if verbose:
+                        if trans_Num == 0:
+                            plot_waveform(audioSignal_Norm, sample_rate = self.configDict['inputTransforms_Settings']['resample']['new_freq'], title = audioFIleName)
+                        elif trans_Num == 1:
+                            plot_spectrogram(audioSignal_Norm[0], title = audioFIleName)
+            return audioSignal_Norm, label # label is true if the audio file is real, false if it is synthetic
+        else:
+            return torch.empty(0), torch.empty(0)
 ######################################################################################################################################################
 
 # UTILS
