@@ -52,10 +52,10 @@ configDict = {
 
         'addNoise' : {
             'perform' : True, # either True or False
-            'minimum_LowPassFilter_FreqThreshold' : 6000,
-            'maximum_LowPassFilter_FreqThreshold' : 14000,
-            'minimumNoiseAmount' : 0.005,
-            'maximumNoiseAmount' : 0.02
+            'minimum_LowPassFilter_FreqThreshold' : 50,
+            'maximum_LowPassFilter_FreqThreshold' : 400,
+            'minimumNoiseAmount' : 0.2,
+            'maximumNoiseAmount' : 0.4
         },
 
         'spectrogram' : {
@@ -93,9 +93,9 @@ configDict = {
     'outputFilesSettings': {
         # /content/drive/MyDrive/Master Thesis Project/Trained_Neural_Networks/2D_CNN_SynthParamExtractor_June1_2023
         # /Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June9_2023
-        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm',
-        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm',
-        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm'
+        'outputFolder_Path': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale',
+        'jSonFile_WithThisDict_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale',
+        'pyTorch_NN_StateDict_File_Name': '2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale'
     },
 
     'statistics': {

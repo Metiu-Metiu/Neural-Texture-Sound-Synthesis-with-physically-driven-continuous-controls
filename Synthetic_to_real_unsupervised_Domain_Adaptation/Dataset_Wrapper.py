@@ -88,6 +88,7 @@ class Dataset_Wrapper(Dataset):
             if verbose:
                 plot_waveform(audioSignal_Norm, sample_rate = self.configDict['validation']['nominal_SampleRate'], title = self.labels.iloc[idx, 0])
             if self.applyNoise:
+                # print('applying noise')
                 audioSignal_Norm = add_noise(audioSignal_Norm,
                                             self.labels.iloc[idx, 0],
                                             sample_rate,
@@ -118,9 +119,31 @@ class Dataset_Wrapper(Dataset):
                             plot_spectrogram(audioSignal_Norm[0], title = self.labels.iloc[idx, 0])
             if self.target_transform and labels:
                 labels = self.target_transform(labels)
-            # print(f'Audio signal shape : {audioSignal_Norm.shape}')
-            # print(f'Labels shape : {labels.shape}')
-            # print(f'Transforms : {self.transforms}')
+
+            # print(f'audioSignal_Norm min : {audioSignal_Norm.min()}')
+            # print(f'audioSignal_Norm max : {audioSignal_Norm.max()}')
+            # print(f'audioSignal_Norm shape : {audioSignal_Norm.shape}')
+            # print(f'audioSignal_Norm : {audioSignal_Norm}')
+
+            aToDbTrans = torchaudio.transforms.AmplitudeToDB(stype="amplitude", top_db=80)
+            audioSignal_Norm = aToDbTrans(audioSignal_Norm)
+
+            # print(f'audio DB min : {audioSignal_Norm.min()}')
+            # print(f'audio DB max : {audioSignal_Norm.max()}')
+            # print(f'audio DB shape : {audioSignal_Norm.shape}')
+            # print(f'audio DB : {audioSignal_Norm}')
+
+            threshold = torch.nn.Threshold(-80., -80.)
+            audioSignal_Norm = threshold(audioSignal_Norm)
+
+            audioSignal_Norm = audioSignal_Norm + 80.
+            audioSignal_Norm = audioSignal_Norm / audioSignal_Norm.max()
+
+            # print(f'audio DB norm min : {audioSignal_Norm.min()}')
+            # print(f'audio DB norm max : {audioSignal_Norm.max()}')
+            # print(f'audio DB norm shape : {audioSignal_Norm.shape}')
+            # print(f'audio DB norm: {audioSignal_Norm}')
+
             return audioSignal_Norm, labels
         else:
             return torch.empty(0), torch.empty(0)
@@ -273,6 +296,9 @@ def add_noise(audio_waveform,
                 maximumNoiseAmount,
                 verbose):
 
+    # TEST save nosy Audio file for evaluation
+    # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', str('original_' + audio_file_name)), audio_waveform, in_sample_rate)
+
     specrogramTransform = torchaudio.transforms.Spectrogram(n_fft=1024, power=2)
 
     noise = torch.randn_like(audio_waveform)
@@ -292,7 +318,8 @@ def add_noise(audio_waveform,
 
     if verbose:
         plot_spectrogram(specrogramTransform(audio_waveform[0]), title = 'Original audio')
-    noisy_waveform = audio_waveform + (filteredNoise * random.uniform(minimumNoiseAmount, maximumNoiseAmount))
+    noiseAmount = random.uniform(minimumNoiseAmount, maximumNoiseAmount)
+    noisy_waveform = audio_waveform + (filteredNoise * noiseAmount)
     if verbose:
         plot_spectrogram(specrogramTransform(noisy_waveform[0]), title = 'Audio with noise')
 
@@ -302,7 +329,7 @@ def add_noise(audio_waveform,
     noisy_waveform_norm = torch.div(noisy_waveform, noisy_waveform_max) # normalize audio waveform between -1. and 1.
 
     # TEST save nosy Audio file for evaluation
-    # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', audio_file_name), audio_waveform, filteredNoiseSampRate)
+    # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', audio_file_name), audio_waveform, in_sample_rate)
     # torchaudio.save(os.path.join('/Users/matthew/Downloads/Test_Noisy_Audio', str('noisy_' + audio_file_name)), noisy_waveform_norm, filteredNoiseSampRate)
 
     return noisy_waveform_norm

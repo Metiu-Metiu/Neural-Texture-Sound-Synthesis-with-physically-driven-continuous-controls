@@ -53,7 +53,7 @@ realDataset_AudioFiles_Directory = os.path.join(realDataset_AudioFiles_Directory
 realDataset_CsvFilePath = os.path.join(realDataset_AudioFiles_Directory, str(realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'] + '.csv'))
 
 # prepare synthetic dataset
-synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, configDict, transform = configDict['neuralNetwork_Settings']['input_Transforms'], supervised_Task = False)
+synthDataset = Dataset_Wrapper(synthDataset_AudioFiles_Directory, synthDataset_CsvFilePath, configDict, transform = configDict['neuralNetwork_Settings']['input_Transforms'], applyNoise = True, supervised_Task = False)
 
 # numSamplesTrainSet = int(configDict['syntheticDataset_Settings']['splits']['train'] * len(synthDataset))
 # numSamplesValidationSet = int(configDict['syntheticDataset_Settings']['splits']['val'] * len(synthDataset))
