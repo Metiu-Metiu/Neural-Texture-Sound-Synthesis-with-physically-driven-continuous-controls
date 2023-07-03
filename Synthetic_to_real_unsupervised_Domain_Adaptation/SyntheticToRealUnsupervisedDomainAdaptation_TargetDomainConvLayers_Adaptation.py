@@ -9,13 +9,13 @@ from torch import nn
 
 from torchsummary import summary
 
-from Dataset_Wrapper import Dataset_Wrapper, Mixed_Dataset_Wrapper
+from Dataset_Wrapper import Dataset_Wrapper
 from Neural_Networks import Convolutional_DynamicNet, SyntheticAndReal_Sounds_Classifier_FullyConnectedLayers, train_FCLayers_withFrozenConvLayers, test_FCLayers_withFrozenConvLayers, train_ConvLayers_withFrozenFCLayers, test_ConvLayers_withFrozenFCLayers
 import time
 import datetime
 
 ############### INPUT VARIABLES ###############
-configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_ConfigDict.json'
+configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ConfigDict.json'
 ###############################################
 
 with open(configDict_JSonFilePath) as configDict_JSonFile:
@@ -86,34 +86,34 @@ targetDomainConvLayersAdaptation_ConvLayers.load_state_dict(modelStateDict_OnlyC
 syntheticAndReal_Sound_Classifier_FCLayers = SyntheticAndReal_Sounds_Classifier_FullyConnectedLayers([1, 1, 256],
                         8,
                         2).to(device)     
-# print(syntheticAndReal_Sound_Classifier_FCLayers)
+print(syntheticAndReal_Sound_Classifier_FCLayers)
 
-# checkpointFCLayersFile_path = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('_FCLayers_SyntheticAndRealAudioClassifier') + str('.pth')))
-# checkpointFCLayersDictionary = torch.load(checkpointFCLayersFile_path, map_location = torch.device(device))
-# syntheticAndReal_Sound_Classifier_FCLayers.load_state_dict(checkpointFCLayersDictionary['model_state_dict'])
-# syntheticAndReal_Sound_Classifier_FCLayers.eval() # freeze fully connected layers
+checkpointFCLayersFile_path = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + str('_FCLayers_SyntheticAndRealAudioClassifier') + str('.pth')))
+checkpointFCLayersDictionary = torch.load(checkpointFCLayersFile_path, map_location = torch.device(device))
+syntheticAndReal_Sound_Classifier_FCLayers.load_state_dict(checkpointFCLayersDictionary['model_state_dict'])
+syntheticAndReal_Sound_Classifier_FCLayers.eval() # freeze fully connected layers
 
-# loss_Function = nn.BCELoss()
-# optimizer = torch.optim.Adam(targetDomainConvLayersAdaptation_ConvLayers.parameters(), lr = configDict['neuralNetwork_Settings']['learning_Rate'])
+loss_Function = nn.BCELoss()
+optimizer = torch.optim.Adam(targetDomainConvLayersAdaptation_ConvLayers.parameters(), lr = configDict['neuralNetwork_Settings']['learning_Rate'])
 
-# startTime = time.time()
-# train_ConvLayers_withFrozenFCLayers(syntheticAndReal_Sound_Classifier_FCLayers, # frozen model
-#                       targetDomainConvLayersAdaptation_ConvLayers, # model to be trained
-#                       realDataset_Train_DL,
-#                       realDataset_Valid_DL,
-#                       loss_Function,
-#                       optimizer,
-#                       device,
-#                       50, # number of epochs
-#                       configDict)
-# endTime = time.time()
-# trainingTimeElapsed = round(endTime - startTime)
-# trainingTimeElapsed = str(datetime.timedelta(seconds = trainingTimeElapsed))
-# print(f'Finished training.')
+startTime = time.time()
+train_ConvLayers_withFrozenFCLayers(syntheticAndReal_Sound_Classifier_FCLayers, # frozen model
+                      targetDomainConvLayersAdaptation_ConvLayers, # model to be trained
+                      realDataset_Train_DL,
+                      realDataset_Valid_DL,
+                      loss_Function,
+                      optimizer,
+                      device,
+                      50, # number of epochs
+                      configDict)
+endTime = time.time()
+trainingTimeElapsed = round(endTime - startTime)
+trainingTimeElapsed = str(datetime.timedelta(seconds = trainingTimeElapsed))
+print(f'Finished training.')
 
-# test_ConvLayers_withFrozenFCLayers(realDataset_Test_DL,
-#                      syntheticAndReal_Sound_Classifier_FCLayers,
-#                      targetDomainConvLayersAdaptation_ConvLayers,
-#                      loss_Function,
-#                      configDict)
-# print(f'Finished testing.')
+test_ConvLayers_withFrozenFCLayers(realDataset_Test_DL,
+                     syntheticAndReal_Sound_Classifier_FCLayers,
+                     targetDomainConvLayersAdaptation_ConvLayers,
+                     loss_Function,
+                     configDict)
+print(f'Finished testing.')

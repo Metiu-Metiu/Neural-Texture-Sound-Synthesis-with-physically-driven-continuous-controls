@@ -285,9 +285,7 @@ def train_single_epoch_ConvLayers_withFrozenFCLayers(frozen_nn_Model,
         output = frozen_nn_Model(input)
         print(f'train_single_epoch_ConvLayers_withFrozenFCLayers : model output : {output}')
         print(f'train_single_epoch_ConvLayers_withFrozenFCLayers : model output shape : {output.shape}')
-        # if output > 0.5:
-        #     output = 1.
-        loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32)) # target = real input (see Dataset_Wrapper.py line 183)
+        loss = loss_fn(output, torch.zeros([output.shape[0], 1], dtype = torch.float32)) # target = synthetic input (see Dataset_Wrapper.py line 183)
 
         # backpropagate error and update weights. https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html 
         loss.backward() # Backpropagate the prediction loss. PyTorch deposits the gradients of the loss w.r.t. each parameter.
@@ -296,8 +294,8 @@ def train_single_epoch_ConvLayers_withFrozenFCLayers(frozen_nn_Model,
 
         print(f'Batch number: {batch_number}')
         print(f'        Sample 1: Model output: {output[0]}')
-        print(f'        Sample 1:       Target: {1.}')
-        print(f'        Sample 1:         Loss: {loss_fn(output[0], torch.ones(1, dtype = torch.float32))}')
+        print(f'        Sample 1:       Target: {0.}')
+        print(f'        Sample 1:         Loss: {loss_fn(output[0], torch.zeros(1, dtype = torch.float32))}')
 
         print(f'    Loss: {loss.item()}')
 
@@ -488,7 +486,7 @@ def validate_ConvLayers_withFrozenFCLayers(data_loader, frozen_nn_Model, model, 
             x = model(x)
 
             output = frozen_nn_Model(x)
-            loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32))
+            loss = loss_fn(output, torch.zeros([output.shape[0], 1], dtype = torch.float32))
             cumulative_loss += loss.item()
     
     print(f"Validation loss of last batch: {loss.item()}")
@@ -542,10 +540,10 @@ def test_ConvLayers_withFrozenFCLayers(data_loader, frozen_model, model, loss_fn
             x = model(x)
 
             output = frozen_model(x)
-            loss = loss_fn(output, torch.ones([output.shape[0], 1], dtype = torch.float32))
+            loss = loss_fn(output, torch.zeros([output.shape[0], 1], dtype = torch.float32))
             cumulative_loss += loss.item()
             print(f'    Output of the network: {output}')
-            print(f'    Target: {torch.ones([output.shape[0], 1], dtype = torch.float32)}')
+            print(f'    Target: {torch.zeros([output.shape[0], 1], dtype = torch.float32)}')
             print(f"Batch test loss: {loss.item()}")
     
     mean_loss = cumulative_loss / len(data_loader)

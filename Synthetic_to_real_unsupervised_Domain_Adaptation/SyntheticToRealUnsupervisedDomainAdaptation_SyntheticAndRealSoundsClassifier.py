@@ -15,7 +15,7 @@ import time
 import datetime
 
 ############### INPUT VARIABLES ###############
-configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_ConfigDict.json'
+configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ConfigDict.json'
 ###############################################
 
 with open(configDict_JSonFilePath) as configDict_JSonFile:
@@ -105,7 +105,7 @@ train_FCLayers_withFrozenConvLayers(syntheticAndReal_Sound_Classifier_ConvLayers
                       loss_Function,
                       optimizer,
                       device,
-                      20, # number of epochs
+                      50, # number of epochs
                       configDict)
 endTime = time.time()
 trainingTimeElapsed = round(endTime - startTime)

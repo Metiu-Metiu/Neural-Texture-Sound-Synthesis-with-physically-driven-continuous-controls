@@ -120,12 +120,17 @@ class Dataset_Wrapper(Dataset):
             if self.target_transform and labels:
                 labels = self.target_transform(labels)
 
+            # normalize MelSpectrogram between 0 and 1
+            audioSignal_Norm -= audioSignal_Norm.min()
+            audioSignal_Norm /= audioSignal_Norm.max()
+
             # print(f'audioSignal_Norm min : {audioSignal_Norm.min()}')
             # print(f'audioSignal_Norm max : {audioSignal_Norm.max()}')
             # print(f'audioSignal_Norm shape : {audioSignal_Norm.shape}')
             # print(f'audioSignal_Norm : {audioSignal_Norm}')
 
-            aToDbTrans = torchaudio.transforms.AmplitudeToDB(stype="amplitude", top_db=80)
+            aToDbTrans = torchaudio.transforms.AmplitudeToDB(stype = "power", top_db = 80)
+            # default output representation of MelSpectrogram is power (exponent = 2)
             audioSignal_Norm = aToDbTrans(audioSignal_Norm)
 
             # print(f'audio DB min : {audioSignal_Norm.min()}')
@@ -136,7 +141,7 @@ class Dataset_Wrapper(Dataset):
             threshold = torch.nn.Threshold(-80., -80.)
             audioSignal_Norm = threshold(audioSignal_Norm)
 
-            audioSignal_Norm = audioSignal_Norm + 80.
+            audioSignal_Norm = audioSignal_Norm + audioSignal_Norm.min().abs()
             audioSignal_Norm = audioSignal_Norm / audioSignal_Norm.max()
 
             # print(f'audio DB norm min : {audioSignal_Norm.min()}')
@@ -201,8 +206,10 @@ class Mixed_Dataset_Wrapper(Dataset):
         if idx < len(self.realAudioFilesLabels):
             # chosenToReturnRealAudioFile = random.choice([True, False])
             chosenToReturnRealAudioFile = True
+            # print('Returning real audio file')
         else:
             chosenToReturnRealAudioFile = False
+            # print('Returning synthetic audio file')
         if chosenToReturnRealAudioFile:
             # print(f'{self.realAudioFilesLabels.iloc[idx, 0]}')
             audioFile_path = os.path.join(self.realDataset_AudioFiles_Directory, self.realAudioFilesLabels.iloc[idx, 0])
