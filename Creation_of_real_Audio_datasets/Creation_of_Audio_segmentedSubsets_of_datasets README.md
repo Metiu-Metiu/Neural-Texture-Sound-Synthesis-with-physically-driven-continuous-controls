@@ -1,6 +1,6 @@
 # Creation_of_Audio_segmentedSubsets_of_datasets
 
-This folder is dedicated to software designed to take an already existing dataset of audio files and <b>create a new dataset containing only a subset of the original dataset, with the possibility to segment the audio files</b> into subsequent smaller audio files of a given duration (e.g. 10 seconds). Chunks which would be smaller than the specified duration are discarded.
+This folder is dedicated to software designed to take an already existing dataset of audio files and <b>create a new dataset containing only a subset of the original dataset, with the possibility to segment the audio files</b> into subsequent smaller audio files of a given duration (e.g. 10 seconds). Chunks which would be smaller than the specified duration are discarded. Silent chunks are also discarded.
 
 The already existing dataset is called the 'canonical' version of the dataset.
 The subset is the dataset produced by the script 'Creation_of_Audio_segmentedSubsets_of_datasets.py', by only selecting the files in the canonical dataset which have the wanted classes (e.g. 'water' only).
@@ -13,7 +13,8 @@ This repo does not contain the actual created dataset because they are too large
 
 You can enter many settings in the dictionary 'realSoundsDataset_Creator_Dict' in the script 'Creation_of_Audio_segmentedSubsets_of_datasets.py' to create the wanted subset of the dataset.
 
-Particular attention has bee put on the <b>criteria of labels/tags matching between the original dataset and the subset</b> (see do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy()). 
+Particular attention has been put on the <b>criteria of labels/tags matching between the original dataset and the subset</b> (the ‘keywords’ tag labels of the canonical dataset which need to also be present in the subset, or not present in the subset, in many combination and permutations). See do_CanonicalAndSubsetTags_Match_AccordingToSubsetTagsPolicy(). The user can in fact, in the JSON configuration file, specify 2 lists of string-type tags, one for the subset tags, one for the excluded tags (the latter can be empty).
+
 The 5 options are:
 
 <b>
@@ -34,7 +35,7 @@ The tags of the FSD50K dataset are the labels from the <b>AudioSet Ontology</b>,
 The dictionary 'realSoundsDataset_Creator_Dict' is bumped into a .json file for future reference in the same folder as the output subset/segmented dataset.
 The same applies to the ground truth (labels/tags) values of the subset/segmented dataset; both .csv files and python dict (.json files) are created in the output dataset folder.
 
-Up to May 16th 2023, the script is designed to work with the <b>soundata library</b> and the <b>FSD50K dataset</b>.
+Up to May 16th 2023, the script is designed to work with the <b>soundata library</b> and the <b>FSD50K dataset</b>, but the code is designed to be easily-extensible to other loader libraries and datasets as well.
 
 ### FSD50K (canonical dataset folder not included in this repo)
 

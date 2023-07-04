@@ -1,2 +1,37 @@
 # SMC_thesis
-Real-time Neural Texture Sound Synthesis with meaningful and continuous controls
+## Real-time Neural Texture Sound Synthesis with meaningful and continuous controls
+
+The Project is developed in the context of the Master's Thesis in Sound and Music Computing at the Music Technology Group of the Universitat Pompeu Fabra, Barcelona, Spain.
+The Neural Network Architectures are developed using PyTorch.
+
+The Project encompasses the whole pipeline of
+- labelling realistic sound files datasets with continuous, physically-driven Synthesis Control Parameters (e.g. 'average rate of bubbles' for streaming water sounds, etc.).
+  This module of the Project is represented by the first 3 sub-parts of the Project (see below).
+- use the labelled realistic-sounds dataset to condition the Sound Synthesis process, in order to obtain a Neural Network that can perform real-time Texture Sound Synthesis with meaningful and continuous controls.
+  This module of the Project is represented by the last sub-part of the Project (see below).
+  
+This particular piece of Research is undertaken on Texture sounds, particularly on sounds of streaming water, or flowing water, but the code (mainly Python) is designed and structured in such a way so that it can be easily adapted to other kinds of sounds, to other kinds of Synthesis Control Parameters, to other datasets, to other Convolutional-based Neural Networks Architectures, etc..
+Each of the 4 sub-parts/folders exposes an interface to the user, which mainly consists of:
+- a JSON configuration file, which is used to specify the parameters of the intended task (e.g. the number of sound samples to create, the duration of each sound sample, the tags to take into account when extracting the sub-set of the canonical dataset, etc.), and it is designed to be as human-readable, portable, and human-friendly as possible.
+- one or more Python scripts, runnable from the command line. The user does not need to modify the Python scripts; it is just necessary to modify the JSON files and run the relative Python scripts
+
+This Project is articulated in 4 main sub-repositories, each of which corresponds to a particular part and milestone of the Project, and is contained in a specific folder (listed in order of intended use);
+- ## Creation_of_synthetic_Audio_datasets
+    Software dedicated to creating datasets of synthetic sound files, by controlling Max/PD patches with already-made sound engines.
+    The software focuses on various high-level characteristics of the intended Dataset to be created (synthesis control parameters distribution, number of sound samples, duration, etc.)
+
+- ## Creation_of_real_Audio_datasets
+    Software dedicated to the creation of real sound files datasets, by creating sub-sets of pre-existing Audio datasets.
+    The software focuses on the tags to take into account when extracting the sub-set of the canonical dataset, the tags to avoid, and creating segments of audio files chunks by specyfing a desired duration (silent chunks, if present -they often ARE present !!- are not considered in the created sub-set, as they can be harmful to use when training Neural Networks).
+
+- ## Synthetic_to_real_unsupervised_Domain_Adaptation
+    Software dedicated to the training of a Neural Network to perform unsupervised Domain Adaptation from a synthetic dataset to a real dataset, which is then used to label the real dataset with the Synthesis Control Parameters' labels. The labels of the real sounds dataset will be used to condition the Sound Synthesis (see next folder).
+    The software focuses on the design and training of 3 Neural Networks, all of which are Convolutional-based (the Domain Adaptation part, also called Adversarial Discriminative Domain Adaptation, is inspired by the paper [Adversarial Discriminative Domain Adaptation](https://arxiv.org/pdf/1702.05464.pdf) by Tzeng et al.):
+    - A synthesis control parameters extractor, which extracts a number of high-level synthesis control parameters from the synthetic dataset
+    - A real/synthetic sound classifier, which classifies the distribution of a sound sample (specifically, its representation in the Flatten layer of the previously-created synthesis control parameters-extractor network mentioned above) as being either synthetic or real
+    - A domain adaptation network, which basically starts from the pre-trained Convolutional layers of the synthesis control parameters-extractor network, and adapts those same layers to the distribution of the real dataset, by using the real/synthetic sound classifier network as a discriminator (the weights of the Convolutional layers are modified so that the real sounds have the same distribution as the synthetic sounds, on which the Fully Connected layers have already tested to be good synthesis control parameters extractors). This networks is used to label the real dataset with the synthesis control parameters' labels.
+
+- ## Real time texture Sound Synthesis with continuous controls (pending)
+    WORK IN PROGRESS.......
+
+Please refer to each folder for specific READMEs and further information.
