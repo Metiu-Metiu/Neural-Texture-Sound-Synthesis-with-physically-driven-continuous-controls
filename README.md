@@ -12,10 +12,10 @@ The Project encompasses the whole pipeline of
   
 This particular piece of Research is undertaken on Texture sounds, particularly on sounds of streaming water, or flowing water, but the code (mainly Python) is designed and structured in such a way so that it can be easily adapted to other kinds of sounds, to other kinds of Synthesis Control Parameters, to other datasets, to other Convolutional-based Neural Networks Architectures, etc..
 Each of the 4 sub-parts/folders exposes an interface to the user, which mainly consists of:
-- a JSON configuration file, which is used to specify the parameters of the intended task (e.g. the number of sound samples to create, the duration of each sound sample, the tags to take into account when extracting the sub-set of the canonical dataset, etc.), and it is designed to be as human-readable, portable, and human-friendly as possible.
+- a JSON dictionary configuration file, which is used to specify the parameters of the intended task (e.g. the number of sound samples to create, the duration of each sound sample, the tags to take into account when extracting the sub-set of the canonical dataset, etc.), and it is designed to be as human-readable, portable, and human-friendly as possible. Only for the Creation_of_synthetic_Audio_datasets sub-repo, the JSON configuration dictionary is not in a separate file but is directly written in the Python script, for simplicity.
 - one or more Python scripts, runnable from the command line. The user does not need to modify the Python scripts; it is just necessary to modify the JSON files and run the relative Python scripts
 
-This Project is articulated in 4 main sub-repositories, each of which corresponds to a particular part and milestone of the Project, and is contained in a specific folder (listed in order of intended use);
+This Project is articulated in 4 main sub-repositories, each of which corresponds to a particular part and milestone of the Project, and is contained in a specific folder (listed in order of intended use) with dedicated READMEs, scripts, configuration files and Python environments (with relative requirements.txt files, etc.):
 - ## Creation_of_synthetic_Audio_datasets
     Software dedicated to creating datasets of synthetic sound files, by controlling Max/PD patches with already-made sound engines.
     The software focuses on various high-level characteristics of the intended Dataset to be created (synthesis control parameters distribution, number of sound samples, duration, etc.)
