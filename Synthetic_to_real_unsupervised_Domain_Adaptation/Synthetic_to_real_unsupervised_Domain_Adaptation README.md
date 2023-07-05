@@ -32,6 +32,24 @@ The main class definition is Convolutional_DynamicNet, which is a Convolutional 
 The size of the Fully Connected layers' input is automatically calculated, so that the construction of the network architecture is completely automatic and dynamic.
 For example, a thing that needs to be specified in the Configuration_Dictionary.py is the number of Synthesis Control Parameters to be extracted, which is the size of the output of the network.
 
+Specifically, the list of Neural Network Architecture parameters extracted from the configuration dictionary passed as argument to the Convolutional_DynamicNet constructor, is as follows:
+
+      - numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 
+      - numberOfConvLayers 
+      - kernelSizeOfConvLayers
+      - strideOfConvLayers 
+      - kernelSizeOfPoolingLayers
+      - strideOfPoolingLayers 
+      - numberOfFullyConnectedLayers 
+      - fullyConnectedLayers_InputSizeDecreaseFactor
+      - leakyReLU_NegativeSlope 
+
+While they are all pretty self-explanatory, it is worth explaining the process behind the dynamic design of the number of Convolutional channels, number of nodes in Fully Connected layers, and number of Synthesis Control Parameters to extract from the input Audio file.
+In the first Convolutional layer, there is always a 1-to-1 mapping between a Synthesis Control Parameter and a Convolutional channel (in our example case, 4 Convolutional channels for 4 Synthesis Control Parameters). For each consecutive Convolutional Layer, the number of channels can stay the same (numberOfFeaturesToExtract_IncremMultiplier_FromLayer1 = 1) or be multiplied by any integer number (in my example case, <strong>numberOfFeaturesToExtract_IncremMultiplier_FromLayer1</strong> = 2, so that the number of Convolutional channels are 4, 8, 16, and 32).
+The same, but reversed, policy is applied in the Fully Connected layers with the parameter <strong>fullyConnectedLayers_InputSizeDecreaseFactor</strong>, which is a divider rather than a multiplier (in my example case, fullyConnectedLayers_InputSizeDecreaseFactor = 4 so that each Fully Connected layer is ¼ the size of the previous Fully Connected layer).
+This level of dynamic Architecture design allows fast prototyping and experimenting with various settings and hyperparameters.
+
+
 The only a propri decision is that Convolutional Layers are followed by the following Layers types as they proved to be effective:
  - nn.BatchNorm1d
  - nn.LeakyReLU
