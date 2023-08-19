@@ -9,8 +9,11 @@ import json
 import pandas # to merge dev and eval .csv files into one .csv file
 import numpy
 
+import librosa
+
 class Loader_Library(Enum):
     SOUNDATA = 1
+    NONE = 2
 
 class Subset_Tags_Policy(Enum): # all computations are made regardless of tags order in all lists
     AllAndOnlySubsetTags_ArePresentInCanonicalDatasetFile = 1 
@@ -18,14 +21,17 @@ class Subset_Tags_Policy(Enum): # all computations are made regardless of tags o
     AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 3
     AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile = 4
     AtLeastOneSubsetTag_IsPresentInCanonicalDatasetFile_AndExcludedTagsAreNot = 5
+    Ignore_tags = 6
 
 ############## INPUT VARIABLES here ##############
+outputFileSegmentsSampleRate_WithNoLoaderLibrary_IgnoringTags = 44100 # hZ
+
 realSoundsDataset_Creator_Dict = {
     'canonicalDatasetLoader_Settings': {
-        'datasetLoader_Library': Loader_Library.SOUNDATA.name,
+        'datasetLoader_Library': Loader_Library.NONE.name,
         'datasetLoader_Name': 'fsd50k', # should be supported by the loader library you chose to use (exactly same name as in the loader library)
         # 'canonicalDataset_RemoteURL': 'https://soundata.readthedocs.io/en/latest/source/tutorial.html#accessing-data-remotely', # Google Drive link to the canonical version of the dataset 
-        'canonicalDataset_LocationPath': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets/FSD50K',
+        'canonicalDataset_LocationPath': '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Unsegmented_20Minutes_shower_withDifferentFlowRates',
         'download_CanonicalDataset': False, # either True or False
         'validate_CanonicalDataset': False, # either True or False
         'audio_Files_Format' : '.wav'
@@ -37,15 +43,15 @@ realSoundsDataset_Creator_Dict = {
     },
 
     'subset_Settings': {
-        'createSubset': True, # either True or False
+        'createSubset': False, # either True or False
         'tags_ToExtractFromCanonicalDataset': list(['Water', 'Stream']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
         'tags_ToAvoidFromCanonicalDataset': list(['Rain', 'Gurgling', 'Steam', 'Ocean']), # these labels will be used to create a partial subset of the canonical dataset with only audio files with these labels
-        'subsetTags_Policy': Subset_Tags_Policy.AtLeastAllSubsetTags_ArePresentInCanonicalDatasetFile_AndExcludedTagsAreNot.name, 
+        'subsetTags_Policy': Subset_Tags_Policy.Ignore_tags.name, 
     },
 
     'outputDataset_Settings': {
-        'outputDataset_ParentFolder': '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/datasets',
-        'outputDataset_FolderName': 'FSD50K_Water_Stream_subset_1sec', # also name of the .json file with this dictionary
+        'outputDataset_ParentFolder': '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis',
+        'outputDataset_FolderName': 'Segmented_20Minutes_shower_withDifferentFlowRates', # also name of the .json file with this dictionary
         'outputDataset_DevSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName, '' not to put the dev split in a subfolder
         'outputDataset_EvalSplit_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the dev split in a subfolder
         'outputDataset_GroundTruthCsvFiles_SubFolderName' : '', # subfolder of outputDataset_FolderName,'' not to put the .csv files in a subfolder
@@ -323,3 +329,57 @@ if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoa
         os.remove(devCsvFilePath)
         os.remove(evalCsvFilePath)
 ####################################### end if realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.SOUNDATA.name:
+elif realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.NONE.name and realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.Ignore_tags.name:
+    if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips'] or realSoundsDataset_Creator_Dict['subset_Settings']['createSubset']:
+        realSoundsDataset_Creator_Dict['outputDataset_Statistics'] = {}
+    
+    outputCsvFile_Dict = dict()
+    canonicalDataset_AudioFilesFolder_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['canonicalDataset_LocationPath']))
+    # print(canonicalDataset_AudioFilesFolder_Path)
+    outputSegmentedDataset_AudioFilesFolder_Path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']))
+    # print(outputSegmentedDataset_AudioFilesFolder_Path)
+
+    outputCsvFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('.csv')
+    outputCsvFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), outputCsvFileName)
+    with open(outputCsvFilePath, 'w') as outputCsvFile:
+        csvWriter = csv.writer(outputCsvFile)
+        if realSoundsDataset_Creator_Dict['subset_Settings']['createSubset'] == False: # NO SUBSET ##########################################
+            if realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segment_AudioClips']: # SEGMENTATION ##################
+                # THIS OPTION WILL LIKELY CREATE A HHUUGGEE DATASET, BE AWARE OF WHAT YOU DO !!!!!!!!!!!!
+                subsetDataset_Augm_Size = 0
+                for filename in os.listdir(canonicalDataset_AudioFilesFolder_Path):
+                    if filename.endswith(".wav"):
+                        canonicalFileName_NoExt = os.path.splitext(filename)[0]
+                        canonicalFileAudioWaveF, canonicalFileSR = librosa.load(os.path.join(canonicalDataset_AudioFilesFolder_Path, filename), sr = outputFileSegmentsSampleRate_WithNoLoaderLibrary_IgnoringTags)
+                        # print(canonicalFileAudioWaveF)
+                        # print(canonicalFileAudioWaveF.shape)
+                        # print(canonicalFileSR)
+                        segmentSize_Samp = int(realSoundsDataset_Creator_Dict['canonicalDatasetAugmentation_Settings']['segments_Length_Secs'] * canonicalFileSR)
+                        audioSegments = essentia.FrameGenerator(canonicalFileAudioWaveF, frameSize = segmentSize_Samp, hopSize = segmentSize_Samp, startFromZero=True, validFrameThresholdRatio = 1)
+                        segmentNum = 1
+                        if len(canonicalFileAudioWaveF) >= segmentSize_Samp:
+                            for segment in audioSegments:
+                                audioSignal_Abs = numpy.absolute(segment)
+                                audioSignal_Max = numpy.max(audioSignal_Abs)
+                                if audioSignal_Max > 0.:
+                                    outpuFileName = str(str(canonicalFileName_NoExt) + str('_') + str(segmentNum))
+                                    output_file_path = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), (str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])))
+                                    if os.path.exists(output_file_path):
+                                        print(f'ERROR:  An Audio file you are trying to create ALREADY EXISTS at path {output_file_path} ; Exiting...')
+                                        exit()
+                                    essentia.MonoWriter(filename = output_file_path, sampleRate = outputFileSegmentsSampleRate_WithNoLoaderLibrary_IgnoringTags)(segment)
+                                    csvWriter.writerow([str(outpuFileName) + str(realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['audio_Files_Format'])])
+                                    segmentNum += 1
+                                    subsetDataset_Augm_Size += 1
+            else: # NO SEGMENTATION ##########################################################################################################
+                print('Why should you copy the entire canonical dataset if you don\'t want to create a subset of it, nor segment it ?')
+                exit()
+
+    # create .json file with realSoundsDataset_Creator_Dict
+    os.makedirs(os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName'])), exist_ok=True)
+    jsonFileName = str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']) + str('_creatorDescriptorDict') + str(".json")
+    jsonFilePath = os.path.join(os.path.abspath(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_ParentFolder']), str(realSoundsDataset_Creator_Dict['outputDataset_Settings']['outputDataset_FolderName']), jsonFileName)
+    with open(jsonFilePath, 'w') as jsonfile:
+        json.dump(realSoundsDataset_Creator_Dict, jsonfile, indent=4)
+    print(f'Finished writing {jsonFileName} .json file with realSoundsDataset_Creator_Dict')
+##### end elif realSoundsDataset_Creator_Dict['canonicalDatasetLoader_Settings']['datasetLoader_Library'] == Loader_Library.NONE.name and realSoundsDataset_Creator_Dict['subset_Settings']['subsetTags_Policy'] == Subset_Tags_Policy.Ignore_tags.name:
