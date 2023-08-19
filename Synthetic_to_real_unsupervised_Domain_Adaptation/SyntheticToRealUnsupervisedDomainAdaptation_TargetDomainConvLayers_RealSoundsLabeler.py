@@ -13,8 +13,16 @@ from Dataset_Wrapper import Dataset_Wrapper
 from Neural_Networks import Convolutional_DynamicNet, perform_inference_byExtractingSynthesisControlParameters
 
 ############### INPUT VARIABLES ###############
+# The configuration dictionary of the pre-trained Synthesis Control Parameters extractor Neural Network
 configDict_JSonFilePath = '/Users/matthew/Desktop/UPF/Courses/Master thesis project (Frederic Font)/Lonce Wyse - Data-Driven Neural Sound Synthesis/Software/Neural Networks/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ConfigDict.json'
 labelSyntheticDataset_RatherThanRealDataset = False # if True, the model will be inferenced on the synthetic dataset, otherwise on the real dataset
+
+# The configuration dictionary of the dataset to be labelled
+# Each saved pytorch pre-trained extractor model has a configuration dictionary file wich specifies
+#   the dataset used to train the model. If you want to perform parameters extraction on a different dataset, 
+#   specify the dataset path here and change the line at the comment # Change Real Dataset path here
+realDataset_JSonFilePath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates/Segmented_20Minutes_shower_withDifferentFlowRates_creatorDescriptorDict.json'
+save_CSVFileWithLabels_InDatasetFolder = True # if False, the .csv file with extracted labels will be saved in the pytorch model folder
 ###############################################
 
 with open(configDict_JSonFilePath) as configDict_JSonFile:
@@ -46,7 +54,13 @@ syntheticDataset_LabelsNames = synthDatasetGenerator_DescriptorDict['Synthesis_C
 synthDataset_AudioFiles_Directory = os.path.abspath(synthDatasetGenerator_DescriptorDict['Dataset_General_Settings']['absolute_Path'])
 synthDataset_CsvFilePath = os.path.join(synthDataset_AudioFiles_Directory, str(synthDatasetGenerator_DescriptorDict['Audio_Files_Settings']['file_Names_Prefix'] + '.csv'))
 
-with open(configDict['paths']['realDataset_JSonFile_Path']) as realDataset_JSonFile:
+##############################
+# Change Real Dataset path here
+##############################
+# configDict['paths']['realDataset_JSonFile_Path'] is the dataset used to train the neural model
+# realDataset_JSonFilePath is another arbitrary dataset, specified at the top of this script
+with open(realDataset_JSonFilePath) as realDataset_JSonFile:
+# with open(configDict['paths']['realDataset_JSonFile_Path']) as realDataset_JSonFile:
     realDatasetGenerator_DescriptorDict = json.load(realDataset_JSonFile)
 realDataset_AudioFiles_Directory_ParentFold = os.path.abspath(realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_ParentFolder'])
 realDataset_AudioFiles_Directory = os.path.join(realDataset_AudioFiles_Directory_ParentFold, realDatasetGenerator_DescriptorDict['outputDataset_Settings']['outputDataset_FolderName'])
@@ -118,29 +132,59 @@ if len(labelled_AudioFilesDict.keys()) == datasetLength:
 else:
     print(f'{len(labelled_AudioFilesDict.keys())} files have been labelled, but the dataset size is {len(realDataset)}.')
 
-labelled_AudioFilesDict_StrIdentifier = str('_ExtractedAudioFilesLabels__DA')
-if labelSyntheticDataset_RatherThanRealDataset:
-    datasetTypeIdentifier = str('_SynthDataset')
-else:
-    datasetTypeIdentifier = str('_RealDataset')
-labelled_AudioFilesDict_JSON_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.json')))
-labelled_AudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.csv')))
-with open(labelled_AudioFilesDict_JSON_FilePath, 'w') as labelled_AudioFilesDict_JSON_File:
-        json.dump(labelled_AudioFilesDict, labelled_AudioFilesDict_JSON_File, indent = 4)
+# print(labelled_AudioFilesDict)
 
-csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
-csvFileFieldnames += syntheticDataset_LabelsNames # add synthesis control parameters names to the .csv file header
+if save_CSVFileWithLabels_InDatasetFolder == False:
+    labelled_AudioFilesDict_StrIdentifier = str('_ExtractedAudioFilesLabels__DA')
+    if labelSyntheticDataset_RatherThanRealDataset:
+        datasetTypeIdentifier = str('_SynthDataset')
+    else:
+        datasetTypeIdentifier = str('_RealDataset')
+    labelled_AudioFilesDict_JSON_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.json')))
+    labelled_AudioFilesDict_CSV_FilePath = os.path.join(pre_trained_model_path_parentFold, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.csv')))
+    with open(labelled_AudioFilesDict_JSON_FilePath, 'w') as labelled_AudioFilesDict_JSON_File:
+            json.dump(labelled_AudioFilesDict, labelled_AudioFilesDict_JSON_File, indent = 4)
 
-labelled_AudioFiles_ListOfDict = list()
-for key in labelled_AudioFilesDict.keys():
-    thisFileDict = dict()
-    thisFileDict['AudioFileName'] = key
-    for i in range(len(syntheticDataset_LabelsNames)):
-        thisFileDict[syntheticDataset_LabelsNames[i]] = labelled_AudioFilesDict[key][syntheticDataset_LabelsNames[i]]
-    labelled_AudioFiles_ListOfDict.append(thisFileDict)
-with open(labelled_AudioFilesDict_CSV_FilePath, 'w') as csvfile: 
-    writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames, dialect='excel')
-    writer.writeheader()
-    for dict in labelled_AudioFiles_ListOfDict:
-        writer.writerow(dict)
-print(f'Finished writing .csv file with Audio Files labels.')
+    csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
+    csvFileFieldnames += syntheticDataset_LabelsNames # add synthesis control parameters names to the .csv file header
+
+    labelled_AudioFiles_ListOfDict = list()
+    for key in labelled_AudioFilesDict.keys():
+        thisFileDict = dict()
+        thisFileDict['AudioFileName'] = key
+        for i in range(len(syntheticDataset_LabelsNames)):
+            thisFileDict[syntheticDataset_LabelsNames[i]] = labelled_AudioFilesDict[key][syntheticDataset_LabelsNames[i]]
+        labelled_AudioFiles_ListOfDict.append(thisFileDict)
+    with open(labelled_AudioFilesDict_CSV_FilePath, 'w') as csvfile: 
+        writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames, dialect='excel')
+        writer.writeheader()
+        for dict in labelled_AudioFiles_ListOfDict:
+            writer.writerow(dict)
+    print(f'Finished writing .csv file with Audio Files labels.')
+else: # if save_CSVFileWithLabels_InDatasetFolder == True:
+    labelled_AudioFilesDict_StrIdentifier = str('_ExtractedAudioFilesLabels__DA')
+    if labelSyntheticDataset_RatherThanRealDataset:
+        datasetTypeIdentifier = str('_SynthDataset') # INSERT DATASET NAME HERE
+    else:
+        datasetTypeIdentifier = str('_runningwater.16K')  # INSERT DATASET NAME HERE
+    labelled_AudioFilesDict_JSON_FilePath = os.path.join(realDataset_AudioFiles_Directory, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.json')))
+    labelled_AudioFilesDict_CSV_FilePath = os.path.join(realDataset_AudioFiles_Directory, (configDict['outputFilesSettings']['pyTorch_NN_StateDict_File_Name'] + labelled_AudioFilesDict_StrIdentifier + datasetTypeIdentifier + str('.csv')))
+    with open(labelled_AudioFilesDict_JSON_FilePath, 'w') as labelled_AudioFilesDict_JSON_File:
+            json.dump(labelled_AudioFilesDict, labelled_AudioFilesDict_JSON_File, indent = 4)
+
+    csvFileFieldnames = ['AudioFileName'] # .csv file header name for audio files names column
+    csvFileFieldnames += syntheticDataset_LabelsNames # add synthesis control parameters names to the .csv file header
+
+    labelled_AudioFiles_ListOfDict = list()
+    for key in labelled_AudioFilesDict.keys():
+        thisFileDict = dict()
+        thisFileDict['AudioFileName'] = key
+        for i in range(len(syntheticDataset_LabelsNames)):
+            thisFileDict[syntheticDataset_LabelsNames[i]] = labelled_AudioFilesDict[key][syntheticDataset_LabelsNames[i]]
+        labelled_AudioFiles_ListOfDict.append(thisFileDict)
+    with open(labelled_AudioFilesDict_CSV_FilePath, 'w') as csvfile: 
+        writer = csv.DictWriter(csvfile, fieldnames=csvFileFieldnames, dialect='excel')
+        writer.writeheader()
+        for dict in labelled_AudioFiles_ListOfDict:
+            writer.writerow(dict)
+    print(f'Finished writing .csv file with Audio Files labels.')

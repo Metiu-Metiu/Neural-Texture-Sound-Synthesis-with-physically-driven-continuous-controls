@@ -57,6 +57,8 @@ class Dataset_Wrapper(Dataset):
             self.rangeOfColumnNumbers_ToConsiderInCsvFile = None
             self.numberOfLabels = None
 
+        self.check_NominalSampleRate_AndDuration = False
+
     def __len__(self):
         return len(self.labels)
 
@@ -72,8 +74,9 @@ class Dataset_Wrapper(Dataset):
             assert audioFile_path.endswith(self.configDict['validation']['nominal_AudioFileExtension']), f"Error while loading {audioFile_path} : Audio file extension is not valid"
             if self.configDict['validation']['validate_AudioDatasets']:
                 audioFile_Metadata = torchaudio.info(audioFile_path)
-                assert audioFile_Metadata.sample_rate == self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Sample rate is not valid"
-                assert audioFile_Metadata.num_frames == self.configDict['validation']['nominal_AudioDurationSecs'] * self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Audio duration is not valid"
+                if self.check_NominalSampleRate_AndDuration:
+                    assert audioFile_Metadata.sample_rate == self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Sample rate is not valid"
+                    assert audioFile_Metadata.num_frames == self.configDict['validation']['nominal_AudioDurationSecs'] * self.configDict['validation']['nominal_SampleRate'], f"Error while loading {audioFile_path} : Audio duration is not valid"
                 assert audioFile_Metadata.num_channels == self.configDict['validation']['nominal_NumOfAudioChannels'], f"Error while loading {audioFile_path} : Number of audio channels is not valid"
                 assert audioFile_Metadata.bits_per_sample == self.configDict['validation']['nominal_BitQuantization'], f"Error while loading {audioFile_path} : Bit quantization is not valid"
             audioSignal, sample_rate = torchaudio.load(audioFile_path)
