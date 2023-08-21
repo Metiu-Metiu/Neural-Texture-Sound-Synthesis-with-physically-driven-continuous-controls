@@ -1,9 +1,9 @@
 # INPUT VARIABLES
 ##############################################################################################################
-originalRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates with params files'
-resampledRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates with params files'
+originalRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates_UniformDistrFor_expRadius'
+resampledRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates_UniformDistrFor_expRadius'
 
-realDatasetLabels_CsvFilePath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates with params files/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ExtractedAudioFilesLabels__DA_runningwater.16K.csv'
+realDatasetLabels_CsvFilePath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ExtractedAudioFilesLabels__DA_runningwater.16K.csv'
 numOfSynthContrParamValues_ForEachAudioFile = 11
 target_sample_rate = 16000
 
@@ -54,25 +54,28 @@ if not os.path.exists(resampledRealDatasetPath):
     os.makedirs(resampledRealDatasetPath)
 
 realDatasetLabels_ColumnNames = []
+inputFiles = os.listdir(originalRealDatasetPath)
+
 with open(realDatasetLabels_CsvFilePath, 'r') as realDatasetLabelsCSVFile:
             csvReader = csv.DictReader(realDatasetLabelsCSVFile)
             for csvReaderRow in csvReader:
-                paramsFileDict = dict()
-                paramsFileDict['meta'] = dict()
-                paramsFileDict['meta']['filename'] = csvReaderRow['AudioFileName']
-                for csvReaderRowKey in csvReaderRow.keys():
-                    if csvReaderRowKey != 'AudioFileName':
-                        paramsFileDict[csvReaderRowKey] = dict()
-                        paramsFileDict[csvReaderRowKey]['times'] = [0, 1]
-                        paramsFileDict[csvReaderRowKey]['values'] = [csvReaderRow[csvReaderRowKey], csvReaderRow[csvReaderRowKey]]
-                        paramsFileDict[csvReaderRowKey]['units'] = 'norm'
-                        paramsFileDict[csvReaderRowKey]['nvals'] = numOfSynthContrParamValues_ForEachAudioFile
-                        paramsFileDict[csvReaderRowKey]['minval'] = 0
-                        paramsFileDict[csvReaderRowKey]['maxval'] = 1
-                paramsFilePath = os.path.join(os.path.abspath(resampledRealDatasetPath), str(os.path.splitext(csvReaderRow['AudioFileName'])[0] + '.params'))
-                with open(paramsFilePath, 'w') as paramsfile:
-                    json.dump(paramsFileDict, paramsfile, indent=4)
-                    numberOfParamsFiles_Created += 1
+                if csvReaderRow['AudioFileName'] in inputFiles:
+                    paramsFileDict = dict()
+                    paramsFileDict['meta'] = dict()
+                    paramsFileDict['meta']['filename'] = csvReaderRow['AudioFileName']
+                    for csvReaderRowKey in csvReaderRow.keys():
+                        if csvReaderRowKey != 'AudioFileName':
+                            paramsFileDict[csvReaderRowKey] = dict()
+                            paramsFileDict[csvReaderRowKey]['times'] = [0, 1]
+                            paramsFileDict[csvReaderRowKey]['values'] = [csvReaderRow[csvReaderRowKey], csvReaderRow[csvReaderRowKey]]
+                            paramsFileDict[csvReaderRowKey]['units'] = 'norm'
+                            paramsFileDict[csvReaderRowKey]['nvals'] = numOfSynthContrParamValues_ForEachAudioFile
+                            paramsFileDict[csvReaderRowKey]['minval'] = 0
+                            paramsFileDict[csvReaderRowKey]['maxval'] = 1
+                    paramsFilePath = os.path.join(os.path.abspath(resampledRealDatasetPath), str(os.path.splitext(csvReaderRow['AudioFileName'])[0] + '.params'))
+                    with open(paramsFilePath, 'w') as paramsfile:
+                        json.dump(paramsFileDict, paramsfile, indent=4)
+                        numberOfParamsFiles_Created += 1
 
 if perform_Resampling:
     print(f'Finished creating .params files for real dataset.')
@@ -84,3 +87,5 @@ if perform_Resampling:
     else:
         print(f'    Number of sound files in dataset != Number of .params files created.')
         print('SOME ERRORS OCCURRED')
+else:
+     print(f'Created {numberOfParamsFiles_Created} .params files for the dataset.')
