@@ -1,13 +1,13 @@
 # INPUT VARIABLES
 ##############################################################################################################
 originalRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates_UniformDistrFor_expRadius'
-resampledRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates_UniformDistrFor_expRadius'
+resampledRealDatasetPath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates_UniformDistrFor_expRadius_16kHz'
 
 realDatasetLabels_CsvFilePath = '/Users/matthew/Downloads/Synthetic-and-real-sounds-datasets-for-SMC_Thesis/Segmented_20Minutes_shower_withDifferentFlowRates/2D_CNN_SynthParamExtractor_June26_2023_Batch128_NoDropouts_10000Dataset_32kHz_3FCLayers_4ConvFilters_IncreasedNumberOfChannels_BatchNorm_DBScale_ExtractedAudioFilesLabels__DA_runningwater.16K.csv'
 numOfSynthContrParamValues_ForEachAudioFile = 11
 target_sample_rate = 16000
 
-perform_Resampling = False # if False, set resampledRealDatasetPath equal to originalRealDatasetPath
+perform_Resampling = True # if False, set resampledRealDatasetPath equal to originalRealDatasetPath
     # only params files will be created if False
 ##############################################################################################################
 

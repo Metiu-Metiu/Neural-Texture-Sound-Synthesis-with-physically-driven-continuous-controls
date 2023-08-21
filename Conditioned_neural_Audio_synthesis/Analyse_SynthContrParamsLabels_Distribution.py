@@ -19,6 +19,7 @@ import pandas
 import matplotlib.pyplot as plt
 import os
 import shutil
+import random
 
 df = pandas.read_csv(synthContrParam_Labels_CSVFilePath)
 df = df.drop(df.columns[0], axis=1)
@@ -73,7 +74,8 @@ if plot:
 totalNumOfSamples = df[variable_ToCreateApproxUniformDistributionFrom].count()
 print(f'\nTotal number of samples for variable {variable_ToCreateApproxUniformDistributionFrom}: {totalNumOfSamples}')
 
-medianNumberOfSamples = int(totalNumOfSamples / numberOfHistogramBins)
+# medianNumberOfSamples = int(totalNumOfSamples / numberOfHistogramBins)
+medianNumberOfSamples = 77
 print(f'\nMedian number of samples for each histogram bin: {medianNumberOfSamples}')
 
 df = pandas.read_csv(synthContrParam_Labels_CSVFilePath)
@@ -89,14 +91,14 @@ for bin_range, count in zip(bin_counts.index, bin_counts.values):
     lower, upper = bin_range.left, bin_range.right
     fileNamesInThisBin = df[(df[variable_ToCreateApproxUniformDistributionFrom] >= lower) & (df[variable_ToCreateApproxUniformDistributionFrom] < upper)]['AudioFileName'].values.tolist()
     print(f"Bin Range: {bin_range}, Count: {count}")
-    # print(filtered_data)
-    if len(fileNamesInThisBin) > medianNumberOfSamples:
-        fileNamesInThisBin = fileNamesInThisBin[:medianNumberOfSamples]
-        print(f'Selected {medianNumberOfSamples} samples from this bin.')
+    print(fileNamesInThisBin)
+    if len(fileNamesInThisBin) >= medianNumberOfSamples:
+        fileNamesInThisBin = random.sample(fileNamesInThisBin, medianNumberOfSamples)
+        filtered_data.append(fileNamesInThisBin)
+        print(f'Selected {len(fileNamesInThisBin)} samples from this bin.')
     else:
-        print(f'Not enough samples in this bin. Selected {len(fileNamesInThisBin)} samples from this bin.')
+        print(f'Not enough samples in this bin. Selected no samples from this bin.')
     print("-" * 40)
-    filtered_data.append(fileNamesInThisBin)
 
 numberOfSamplesInUniformDistr = 0
 for binList in filtered_data:
