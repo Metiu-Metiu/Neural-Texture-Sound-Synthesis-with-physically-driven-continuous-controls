@@ -1,4 +1,4 @@
-# SMC_thesis
+# Sound and Music Compuring Master thesis
 ## Real-time Neural Texture Sound Synthesis with physically-driven continuous controls using synthetic-to-real unsupervised Domain Adaptation
 
 The Project is developed in the context of the Master's Thesis in Sound and Music Computing at the Music Technology Group of the Universitat Pompeu Fabra, Barcelona, Spain.
